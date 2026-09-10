@@ -1,179 +1,62 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#071a3a">
-<title>Tô Ligado! | Monitoramento de Energia</title>
+<title>Tô Ligado! | Monitor de Energia</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  html{scroll-behavior:smooth}
-</style>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">⚡</div>
-      <div><h1>Tô Ligado!</h1><span>Energia consciente, futuro melhor</span></div>
-    </div>
+<header class="topbar">
+  <div class="brand"><div class="brand-icon">⚡</div><div><h1>Tô Ligado!</h1><span>Monitor de Energia Residencial</span></div></div>
+  <div class="header-actions">
+    <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">Conectando...</span></div>
+    <button class="icon-btn" id="themeBtn">🌙</button>
+    <button class="refresh-btn" id="refreshBtn">↻ Atualizar</button>
+  </div>
+</header>
+<main class="container">
+<section class="hero">
+  <div><p class="eyebrow">PAINEL DE MONITORAMENTO</p><h2>Seu consumo, de um jeito mais simples.</h2><p>Acompanhe potência, energia, custos e alertas em tempo real.</p></div>
+  <div class="hero-badge"><span>⚡</span><div><strong id="consumoStatus">Aguardando dados</strong><small>Status do consumo</small></div></div>
+</section>
 
-    <nav class="side-nav" aria-label="Navegação principal">
-      <a class="nav-item active" href="#dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
-      <a class="nav-item" href="#diario"><span class="nav-icon">▣</span><span>Histórico Diário</span></a>
-      <a class="nav-item" href="#mensal"><span class="nav-icon">▥</span><span>Histórico Mensal</span></a>
-      <a class="nav-item" href="#filtros"><span class="nav-icon">⌁</span><span>Filtros Avançados</span></a>
-      <a class="nav-item" href="#config"><span class="nav-icon">⚙</span><span>Configurações</span></a>
-    </nav>
+<section class="kpi-grid">
+<article class="kpi-card blue"><div class="kpi-icon">⚡</div><div><span>Consumo atual</span><strong id="potencia">-- W</strong><small>Potência instantânea</small></div></article>
+<article class="kpi-card green"><div class="kpi-icon">🔋</div><div><span>Energia hoje</span><strong id="energiaDia">-- kWh</strong><small>Consumo acumulado</small></div></article>
+<article class="kpi-card orange"><div class="kpi-icon">💰</div><div><span>Custo estimado</span><strong id="custo">R$ --</strong><small>Tarifa: R$ 0,95/kWh</small></div></article>
+<article class="kpi-card purple"><div class="kpi-icon">📈</div><div><span>Pico do dia</span><strong id="pico">-- W</strong><small>Maior potência registrada</small></div></article>
+</section>
 
-    <div class="side-message">
-      <div class="message-icon">♻</div>
-      <h3>Juntos por um consumo mais consciente!</h3>
-      <p>Monitorar o consumo de energia é o primeiro passo para economizar e cuidar do nosso futuro.</p>
-    </div>
+<section class="control-card">
+<div class="section-title"><div><h3>⚙️ Configuração de alerta</h3><p>Defina o limite de potência para receber um alerta visual.</p></div>
+<div class="alert-counter"><span>🚨</span><strong id="contadorAlertas">0</strong><small>alertas hoje</small></div></div>
+<div class="control-row"><label for="limiteAlerta">Limite de potência (W)</label><div class="limit-input"><input type="number" id="limiteAlerta" min="1" value="14080"><span>W</span></div></div>
+</section>
 
-    <button class="theme-switch" id="themeBtn" type="button">
-      <span>◔</span><span>Modo escuro</span><span class="switch"><i></i></span>
-    </button>
-  </aside>
+<section class="chart-grid">
+<article class="chart-card chart-wide"><div class="chart-heading"><div><h3>⚡ Consumo em tempo real</h3><p>Últimas leituras recebidas da API</p></div><span class="live-badge">● AO VIVO</span></div><div class="chart-wrap large"><canvas id="realtimeChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>📊 Consumo diário</h3><p>Últimos 7 dias</p></div></div><div class="chart-wrap"><canvas id="dailyChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>📅 Consumo mensal</h3><p>Histórico dos últimos meses</p></div></div><div class="chart-wrap"><canvas id="monthlyChart"></canvas></div></article>
+</section>
 
-  <main class="main-content" id="dashboard">
-    <header class="topbar">
-      <div class="welcome">
-        <span>Olá! 👋</span>
-        <h2>Bem-vindo ao Tô Ligado!</h2>
-        <p>Acompanhe em tempo real o consumo de energia da sua casa ou empresa.</p>
-      </div>
-      <div class="header-actions">
-        <div class="api-status" id="statusPill">
-          <span class="cloud">☁</span>
-          <div><strong id="statusText">API Online</strong><small>Dados atualizados em tempo real</small></div>
-        </div>
-        <button class="refresh-btn" id="refreshBtn" type="button">↻ <span>Atualizar</span></button>
-        <button class="moon-btn" id="mobileThemeBtn" type="button" aria-label="Alternar tema">☾</button>
-      </div>
-    </header>
-
-    <section class="kpi-grid">
-      <article class="kpi-card teal">
-        <div class="kpi-top"><div class="kpi-icon">ϟ</div><span class="trend down" id="potenciaTrend">↓ 32%</span></div>
-        <span class="kpi-label">Potência Atual</span>
-        <strong id="potencia">-- W</strong>
-        <small>menor que o limite</small>
-        <div class="mini-spark spark-teal"></div>
-      </article>
-
-      <article class="kpi-card blue">
-        <div class="kpi-top"><div class="kpi-icon">♆</div><span class="trend down">↓ 12%</span></div>
-        <span class="kpi-label">Energia Hoje</span>
-        <strong id="energiaDia">-- kWh</strong>
-        <small>vs. ontem</small>
-        <div class="mini-bars"><i></i><i></i><i></i><i></i></div>
-      </article>
-
-      <article class="kpi-card purple">
-        <div class="kpi-top"><div class="kpi-icon">▤</div><span class="trend down">↓ 12%</span></div>
-        <span class="kpi-label">Custo Hoje</span>
-        <strong id="custo">R$ --</strong>
-        <small>vs. ontem</small>
-        <div class="mini-bars purple-bars"><i></i><i></i><i></i><i></i></div>
-      </article>
-
-      <article class="kpi-card orange">
-        <div class="kpi-top"><div class="kpi-icon">♧</div><span class="trend up">↑ 8%</span></div>
-        <span class="kpi-label">Pico do Dia</span>
-        <strong id="pico">-- W</strong>
-        <small>vs. ontem</small>
-        <div class="mini-bars orange-bars"><i></i><i></i><i></i><i></i></div>
-      </article>
-
-      <article class="kpi-card pink">
-        <div class="kpi-top"><div class="kpi-icon">♧</div><span class="trend alert">△ Atenção</span></div>
-        <span class="kpi-label">Alertas Hoje</span>
-        <strong id="contadorAlertas">0</strong>
-        <small>limite de potência</small>
-        <div class="alert-bell">♧</div>
-      </article>
-    </section>
-
-    <section class="dashboard-grid">
-      <article class="panel realtime-panel">
-        <div class="panel-heading">
-          <div class="heading-icon teal-icon">ϟ</div>
-          <div><h3>Consumo em Tempo Real</h3><p>Atualizado a cada 2 segundos</p></div>
-          <span class="live-badge"><i></i> Tempo Real</span>
-        </div>
-        <div class="chart-wrap large"><canvas id="realtimeChart"></canvas></div>
-      </article>
-
-      <article class="panel status-panel">
-        <div class="panel-heading">
-          <div class="heading-icon green-icon">♻</div>
-          <div><h3>Status do Consumo</h3></div>
-        </div>
-        <div class="status-body">
-          <div class="gauge" id="gauge">
-            <div class="gauge-inner"><div class="home-icon">⌂</div><strong id="consumoStatus">Normal</strong><span>Dentro do limite</span></div>
-          </div>
-          <div class="status-details">
-            <div><span>Limite atual</span><strong id="limiteAtual">14.080 W</strong><button id="editLimitBtn" type="button">✎</button></div>
-            <div><span>Consumo atual</span><strong id="consumoAtual">-- W</strong><small id="percentLimite">--% do limite</small></div>
-            <div class="progress"><i id="limitProgress"></i></div>
-          </div>
-        </div>
-        <div class="success-box" id="statusBox"><b>✓</b><div><strong>Tudo certo!</strong><span>O consumo está dentro do limite estabelecido.</span></div></div>
-      </article>
-    </section>
-
-    <section class="lower-grid">
-      <article class="panel chart-panel" id="diario">
-        <div class="panel-heading">
-          <div class="heading-icon blue-icon">▣</div>
-          <div><h3>Consumo Diário</h3><p>Últimos 7 dias (kWh)</p></div>
-        </div>
-        <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
-      </article>
-
-      <article class="panel chart-panel" id="mensal">
-        <div class="panel-heading">
-          <div class="heading-icon purple-icon">▥</div>
-          <div><h3>Consumo Mensal</h3><p>Últimos 6 meses (kWh)</p></div>
-        </div>
-        <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
-      </article>
-
-      <article class="panel filter-panel" id="filtros">
-        <div class="panel-heading">
-          <div class="heading-icon filter-icon">⌁</div>
-          <div><h3>Filtros Avançados</h3></div>
-        </div>
-        <div class="filter-fields">
-          <div class="field"><label for="anoFiltro">Ano</label><select id="anoFiltro"><option value="2026" selected>2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
-          <div class="field"><label for="mesFiltro">Mês</label><select id="mesFiltro"><option value="">Todos</option><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
-        </div>
-        <button class="primary-btn" id="filterBtn" type="button">⌕ &nbsp;Aplicar Filtro</button>
-        <button class="secondary-btn" id="clearBtn" type="button">× &nbsp;Limpar Filtro</button>
-      </article>
-    </section>
-
-    <section class="bottom-strip" id="config">
-      <div class="howto">
-        <div class="howto-icon">🌍</div><div><h3>Como funciona o Tô Ligado!</h3><p>Da sua casa até o seu navegador, tudo conectado para te dar o melhor controle.</p></div>
-      </div>
-      <div class="architecture">
-        <div><b>▣</b><strong>ESP32 / MQTT</strong><span>Coleta os dados</span></div><em>→</em>
-        <div><b>▤</b><strong>PostgreSQL / Supabase</strong><span>Armazena os dados</span></div><em>→</em>
-        <div><b>☁</b><strong>Flask / Render</strong><span>API e processamento</span></div><em>→</em>
-        <div><b>▣</b><strong>GitHub Pages</strong><span>Seu dashboard online</span></div>
-      </div>
-      <div class="future-badge">♧ <span>Tecnologia e sustentabilidade<br>caminhando juntas!</span></div>
-    </section>
-
-    <footer>Tô Ligado! — Projeto Integrador • Monitoramento IoT de Energia Residencial</footer>
-  </main>
+<section class="filter-card">
+<div class="section-title"><div><h3>🔎 Análise por período</h3><p>Filtre o histórico mensal por ano e mês.</p></div></div>
+<div class="filters">
+<div class="field"><label for="anoFiltro">Ano</label><select id="anoFiltro"><option value="">Selecione</option><option value="2026" selected>2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
+<div class="field"><label for="mesFiltro">Mês</label><select id="mesFiltro"><option value="">Todos os meses</option><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+<button class="primary-btn" id="filterBtn">Aplicar filtro</button><button class="secondary-btn" id="clearBtn">Limpar</button>
 </div>
+</section>
+
+<section class="info-grid">
+<div class="info-box"><span class="info-icon">💡</span><div><strong>Tarifa utilizada</strong><p>R$ 0,95 por kWh</p></div></div>
+<div class="info-box"><span class="info-icon">☁️</span><div><strong>Arquitetura em nuvem</strong><p>API Flask + PostgreSQL/Supabase</p></div></div>
+<div class="info-box"><span class="info-icon">📡</span><div><strong>Comunicação</strong><p>MQTT para as leituras do sensor</p></div></div>
+</section>
+</main>
+<footer><p><strong>Tô Ligado!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Dados atualizados automaticamente</p></footer>
 <script src="app.js"></script>
-</body>
-</html>
 </body>
 </html>
