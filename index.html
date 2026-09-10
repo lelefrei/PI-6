@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitor de Energia Residencial</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Tô Ligado !</h1>
+    <h2>Monitor de Energia Residencial</h2>
+  </header>
+
+  <section style="margin: 15px auto; max-width: 1200px; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 15px;">
+    <div>
+      <label for="limiteAlerta" style="font-weight: bold; margin-right: 8px;">Definir Alerta de Consumo (W):</label>
+      <input type="number" id="limiteAlerta" value="14080" style="padding: 6px; width: 90px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; text-align: center;">
+    </div>
+    <div style="background: #fff3cd; padding: 10px 20px; border-radius: 6px; border: 1px solid #ffeeba; display: flex; align-items: center; gap: 10px;">
+      <span style="font-weight: bold; color: #856404;">🚨 Alertas Disparados:</span>
+      <strong id="contadorAlertas" style="font-size: 20px; color: #721c24;">0</strong>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="card">
+      <h3>Consumo Atual</h3>
+      <p id="potencia">0 W</p>
+    </div>
+    <div class="card">
+      <h3>Energia Hoje</h3>
+      <p id="energiaDia">0 kWh</p>
+    </div>
+    <div class="card">
+      <h3>Custo Estimado</h3>
+      <p id="custo">R$ 0,00</p>
+    </div>
+    <div class="card">
+      <h3>Pico do Dia</h3>
+      <p id="pico">0 W</p>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="chart-container">
+      <h3>Consumo em Tempo Real</h3>
+      <canvas id="realtimeChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>Consumo Diário (kWh)</h3>
+      <canvas id="dailyChart"></canvas>
+    </div>
+
+      <div class="chart-container">
+      <h3>Consumo Mensal (kWh)</h3>
+      
+      <div class="filtro-mensal-container" style="margin: 10px 0 20px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; text-align: center; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
+        
+        <div>
+          <label for="anoFiltro" style="font-weight: bold; font-size: 14px;">Ano:</label>
+          <select id="anoFiltro" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;">
+            <option value="">-- Selecione --</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="mesFiltro" style="font-weight: bold; font-size: 14px;">Mês:</label>
+          <select id="mesFiltro" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="">Todos os meses</option>
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Março</option>
+            <option value="4">Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+        </div>
+        
+        <button onclick="filtrarGraficoMensal()" style="padding: 6px 14px; background-color: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Filtrar</button>
+        <button onclick="limparFiltroMensal()" style="padding: 6px 14px; background-color: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Limpar</button>
+      </div>
+
+      <canvas id="monthlyChart"></canvas>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
