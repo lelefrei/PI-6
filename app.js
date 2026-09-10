@@ -1,9 +1,7 @@
 const tarifa = 0.95;
 
-// URL da API em produção.
-// Exemplo: https://to-ligado-api.onrender.com
-// Durante testes locais, use: http://127.0.0.1:5000
-const API_BASE_URL = "COLOQUE_A_URL_DA_API_AQUI"; 
+
+const API_BASE_URL = "https://to-ligado-api.onrender.com"; 
 
 let consumoTempoReal = [];
 let labelsTempoReal = [];
