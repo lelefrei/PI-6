@@ -1,61 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tô Ligado! - Painel de Controle</title>
-  <link rel="stylesheet" href="style.css" />
-  
-  <!-- Biblioteca Chart.js para renderização dos gráficos -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tô Ligado 2.0! | Monitor de Energia</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="icone-projeto-integrador.jpg" alt="Logo Tô Ligado" />
-      <h1>Tô Ligado!</h1>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="#dispositivos">Dispositivos</a></li>
-        <li><a href="#graficos">Gráficos</a></li>
-      </ul>
-    </nav>
-  </header>
+<header class="topbar">
+  <div class="brand"><div class="brand-icon">⚡</div><div><h1>Tô Ligado 2.0!</h1><span>Monitor de Energia Residencial</span></div></div>
+  <div class="header-actions">
+    <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">Conectando...</span></div>
+    <button class="icon-btn" id="themeBtn">🌙</button>
+    <button class="refresh-btn" id="refreshBtn">↻ Atualizar</button>
+  </div>
+</header>
+<main class="container">
+<section class="hero">
+  <div><p class="eyebrow">PAINEL DE MONITORAMENTO</p><h2>Seu consumo, de um jeito mais simples.</h2><p>Acompanhe potência, energia, custos e alertas em tempo real.</p></div>
+  <div class="hero-badge"><span>⚡</span><div><strong id="consumoStatus">Aguardando dados</strong><small>Status do consumo</small></div></div>
+</section>
 
-  <main>
-    <!-- Seção de Cartões dos Dispositivos -->
-    <section id="dispositivos" class="card">
-      <h2>Status dos Dispositivos</h2>
-      <div id="lista-dispositivos" class="grid-dispositivos">
-        <!-- Dispositivos carregados dinamicamente pelo JS -->
-      </div>
-    </section>
+<section class="kpi-grid">
+<article class="kpi-card blue"><div class="kpi-icon">⚡</div><div><span>Consumo atual</span><strong id="potencia">-- W</strong><small>Potência instantânea</small></div></article>
+<article class="kpi-card green"><div class="kpi-icon">🔋</div><div><span>Energia hoje</span><strong id="energiaDia">-- kWh</strong><small>Consumo acumulado</small></div></article>
+<article class="kpi-card orange"><div class="kpi-icon">💰</div><div><span>Custo estimado</span><strong id="custo">R$ --</strong><small>Tarifa: R$ 0,95/kWh</small></div></article>
+<article class="kpi-card purple"><div class="kpi-icon">📈</div><div><span>Pico do dia</span><strong id="pico">-- W</strong><small>Maior potência registrada</small></div></article>
+</section>
 
-    <!-- Nova Seção com os Gráficos do Supabase -->
-    <section id="graficos" class="card">
-      <h2>Consumo Energético</h2>
-      
-      <div class="grid-graficos">
-        <!-- Gráfico 1: Consumo por Dispositivo -->
-        <div class="card-grafico">
-          <h3>Consumo Total por Dispositivo (kWh)</h3>
-          <canvas id="graficoDispositivos"></canvas>
-        </div>
+<section class="control-card">
+<div class="section-title"><div><h3>⚙️ Configuração de alerta</h3><p>Defina o limite de potência para receber um alerta visual.</p></div>
+<div class="alert-counter"><span>🚨</span><strong id="contadorAlertas">0</strong><small>alertas hoje</small></div></div>
+<div class="control-row"><label for="limiteAlerta">Limite de potência (W)</label><div class="limit-input"><input type="number" id="limiteAlerta" min="1" value="14080"><span>W</span></div></div>
+</section>
 
-        <!-- Gráfico 2: Histórico de Consumo -->
-        <div class="card-grafico">
-          <h3>Evolução do Consumo no Tempo</h3>
-          <canvas id="graficoHistorico"></canvas>
-        </div>
-      </div>
-    </section>
-  </main>
+<section class="chart-grid">
+<article class="chart-card chart-wide"><div class="chart-heading"><div><h3>⚡ Consumo em tempo real</h3><p>Últimas leituras recebidas da API</p></div><span class="live-badge">● AO VIVO</span></div><div class="chart-wrap large"><canvas id="realtimeChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>📊 Consumo diário</h3><p>Últimos 7 dias</p></div></div><div class="chart-wrap"><canvas id="dailyChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>📅 Consumo mensal</h3><p>Histórico dos últimos meses</p></div></div><div class="chart-wrap"><canvas id="monthlyChart"></canvas></div></article>
+</section>
 
-  <footer>
-    <p>&copy; 2026 - Projeto Integrador VI (PI6)</p>
-  </footer>
+<section class="filter-card">
+<div class="section-title"><div><h3>🔎 Análise por período</h3><p>Filtre o histórico mensal por ano e mês.</p></div></div>
+<div class="filters">
+<div class="field"><label for="anoFiltro">Ano</label><select id="anoFiltro"><option value="">Selecione</option><option value="2026" selected>2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
+<div class="field"><label for="mesFiltro">Mês</label><select id="mesFiltro"><option value="">Todos os meses</option><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
+<button class="primary-btn" id="filterBtn">Aplicar filtro</button><button class="secondary-btn" id="clearBtn">Limpar</button>
+</div>
+</section>
 
-  <script src="app.js"></script>
+<section class="info-grid">
+<div class="info-box"><span class="info-icon">💡</span><div><strong>Tarifa utilizada</strong><p>R$ 0,95 por kWh</p></div></div>
+<div class="info-box"><span class="info-icon">☁️</span><div><strong>Arquitetura em nuvem</strong><p>API Flask + PostgreSQL/Supabase</p></div></div>
+<div class="info-box"><span class="info-icon">📡</span><div><strong>Comunicação</strong><p>MQTT para as leituras do sensor</p></div></div>
+</section>
+</main>
+<footer><p><strong>Tô Ligado 2.0!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Dados atualizados automaticamente</p></footer>
+<script src="app.js"></script>
 </body>
 </html>
