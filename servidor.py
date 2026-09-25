@@ -2,9 +2,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import psycopg2
 from datetime import datetime
+import os
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/*": {"origins": os.getenv("CORS_ORIGINS", "*")}}) 
 
 # ============================================================
 # SUPABASE / POSTGRESQL
@@ -21,8 +22,6 @@ CORS(app)
 # SUPABASE_DB_PORT
 #
 # NUNCA coloque a senha do Supabase diretamente neste arquivo.
-import os
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
