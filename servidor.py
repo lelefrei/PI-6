@@ -1,4 +1,3 @@
-import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import psycopg2
@@ -7,22 +6,65 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app) 
 
-# Em produção, prefira DATABASE_URL.
-# Localmente, as variáveis abaixo mantêm compatibilidade com o projeto original.
+# ============================================================
+# SUPABASE / POSTGRESQL
+# ============================================================
+# Configure estas variáveis no Render (ou no seu ambiente local):
+#
+# DATABASE_URL=postgresql://postgres:SENHA@db.PROJETO.supabase.co:5432/postgres
+#
+# O código também aceita as variáveis separadas abaixo, caso prefira:
+# SUPABASE_DB_HOST
+# SUPABASE_DB_NAME
+# SUPABASE_DB_USER
+# SUPABASE_DB_PASSWORD
+# SUPABASE_DB_PORT
+#
+# NUNCA coloque a senha do Supabase diretamente neste arquivo.
+import os
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
     DB_CONFIG = {"dsn": DATABASE_URL}
 else:
     DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "to_ligado"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": os.getenv("DB_PASSWORD", "postgres"),
-        "port": os.getenv("DB_PORT", "5432")
+        "host": os.getenv("SUPABASE_DB_HOST"),
+        "database": os.getenv("SUPABASE_DB_NAME", "postgres"),
+        "user": os.getenv("SUPABASE_DB_USER", "postgres"),
+        "password": os.getenv("SUPABASE_DB_PASSWORD"),
+        "port": os.getenv("SUPABASE_DB_PORT", "5432"),
+        "sslmode": os.getenv("SUPABASE_DB_SSLMODE", "require")
     }
 
 passou_limite_global = False
+
+
+@app.route('/health')
+def health():
+    """Verifica se a API está funcionando e se consegue acessar o Supabase."""
+    conn = None
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT current_database(), current_user")
+        db_name, db_user = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({
+            "status": "ok",
+            "database": db_name,
+            "user": db_user,
+            "supabase": True
+        })
+    except Exception as e:
+        if conn:
+            conn.close()
+        return jsonify({
+            "status": "erro",
+            "supabase": False,
+            "erro": str(e)
+        }), 500
 
 @app.route('/dados_atuais')
 def dados_atuais():
@@ -47,6 +89,33 @@ def dados_atuais():
                 passou_limite_global = True
         else:
             passou_limite_global = False
+
+
+@app.route('/health')
+def health():
+    """Verifica se a API está funcionando e se consegue acessar o Supabase."""
+    conn = None
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT current_database(), current_user")
+        db_name, db_user = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({
+            "status": "ok",
+            "database": db_name,
+            "user": db_user,
+            "supabase": True
+        })
+    except Exception as e:
+        if conn:
+            conn.close()
+        return jsonify({
+            "status": "erro",
+            "supabase": False,
+            "erro": str(e)
+        }), 500
 
         cur.execute("SELECT SUM(potencia_watts / 1000.0 * (2.0 / 3600.0)) FROM leituras_energia WHERE data_hora::date = current_date")
         res_energia = cur.fetchone()

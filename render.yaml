@@ -1,7 +1,9 @@
 services:
   - type: web
-    name: to-ligado-api
+    name: siqa-api
     runtime: python
-    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn servidor:app
+    envVars:
+      - key: DATABASE_URL
+        sync: false
