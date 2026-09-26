@@ -1,3 +1,7 @@
+// ============================================================
+// TÔ LIGADO 2.0! — MONITOR DE ENERGIA
+// ============================================================
+
 const API_BASE_URL = "https://pi6-3ggn.onrender.com";
 
 let realtimeChart = null;
@@ -7,525 +11,687 @@ let monthlyChart = null;
 const TARIFA = 0.95;
 
 
-// =====================================================
-// ELEMENTOS
-// =====================================================
+// ============================================================
+// ELEMENTOS DO HTML
+// ============================================================
 
-const potencia = document.getElementById("potencia");
-const energiaDia = document.getElementById("energiaDia");
-const custo = document.getElementById("custo");
-const pico = document.getElementById("pico");
-const contadorAlertas = document.getElementById("contadorAlertas");
+const potenciaElement =
+    document.getElementById("potencia");
+
+const energiaElement =
+    document.getElementById("energiaDia");
+
+const custoElement =
+    document.getElementById("custo");
+
+const picoElement =
+    document.getElementById("pico");
+
+const contadorAlertasElement =
+    document.getElementById("contadorAlertas");
+
+const statusText =
+    document.getElementById("statusText");
+
+const statusPill =
+    document.getElementById("statusPill");
+
+const consumoStatus =
+    document.getElementById("consumoStatus");
 
 
-// =====================================================
+// ============================================================
 // DADOS ATUAIS
-// =====================================================
+// ============================================================
 
 async function carregarDadosAtuais() {
 
     try {
 
-        const response = await fetch(
+        const resposta = await fetch(
             `${API_BASE_URL}/dados_atuais`
         );
 
-        const dados = await response.json();
+        if (!resposta.ok) {
+            throw new Error("Erro na API");
+        }
 
-        console.log("DADOS ATUAIS:", dados);
+        const dados = await resposta.json();
 
-        potencia.textContent =
-            `${Number(dados.potencia).toFixed(0)} W`;
+        console.log("Dados atuais:", dados);
 
-        energiaDia.textContent =
-            `${Number(dados.energiaDia).toFixed(3)} kWh`;
 
-        pico.textContent =
-            `${Number(dados.picoDia).toFixed(0)} W`;
+        // POTÊNCIA
+        if (potenciaElement) {
 
-        contadorAlertas.textContent =
-            dados.alertasHoje;
+            potenciaElement.textContent =
+                `${Number(dados.potencia).toFixed(0)} W`;
 
-        const valorCusto =
-            Number(dados.energiaDia) * TARIFA;
+        }
 
-        custo.textContent =
-            `R$ ${valorCusto.toFixed(2).replace(".", ",")}`;
+
+        // ENERGIA
+        if (energiaElement) {
+
+            energiaElement.textContent =
+                `${Number(dados.energiaDia).toFixed(3)} kWh`;
+
+        }
+
+
+        // CUSTO
+        if (custoElement) {
+
+            const custo =
+                Number(dados.energiaDia) * TARIFA;
+
+            custoElement.textContent =
+                `R$ ${custo.toFixed(2).replace(".", ",")}`;
+
+        }
+
+
+        // PICO
+        if (picoElement) {
+
+            picoElement.textContent =
+                `${Number(dados.picoDia).toFixed(0)} W`;
+
+        }
+
+
+        // ALERTAS
+        if (contadorAlertasElement) {
+
+            contadorAlertasElement.textContent =
+                dados.alertasHoje;
+
+        }
+
+
+        // STATUS
+        if (statusText) {
+
+            statusText.textContent =
+                "Online";
+
+        }
+
+        if (consumoStatus) {
+
+            consumoStatus.textContent =
+                "Monitoramento ativo";
+
+        }
+
+        if (statusPill) {
+
+            statusPill.classList.add("online");
+
+        }
 
     } catch (erro) {
 
         console.error(
-            "ERRO DADOS ATUAIS:",
+            "Erro ao carregar dados atuais:",
             erro
         );
 
-    }
+        if (statusText) {
+            statusText.textContent =
+                "Offline";
+        }
 
+        if (consumoStatus) {
+            consumoStatus.textContent =
+                "Aguardando conexão";
+        }
+    }
 }
 
 
-// =====================================================
+// ============================================================
 // GRÁFICO EM TEMPO REAL
-// =====================================================
+// ============================================================
 
 async function carregarTempoReal() {
 
     try {
 
-        const response = await fetch(
+        const resposta = await fetch(
             `${API_BASE_URL}/filtrar_avancado`
         );
 
-        const dados = await response.json();
+        if (!resposta.ok) {
+            throw new Error(
+                "Erro ao buscar leituras"
+            );
+        }
+
+        const dados = await resposta.json();
 
         console.log(
-            "DADOS TEMPO REAL:",
+            "Leituras recebidas:",
             dados
         );
 
-        const ultimos =
+
+        // Pega as últimas 30 leituras
+        const ultimas =
             dados.slice(0, 30).reverse();
 
+
         const labels =
-            ultimos.map(item =>
+            ultimas.map(item =>
                 formatarHora(item.data_hora)
             );
 
+
         const valores =
-            ultimos.map(item =>
+            ultimas.map(item =>
                 Number(item.potencia)
             );
 
-        const canvas =
-            document.getElementById("realtimeChart");
 
-        if (!canvas) return;
-
-        if (realtimeChart) {
-            realtimeChart.destroy();
-        }
-
-        realtimeChart = new Chart(
-            canvas,
-            {
-                type: "line",
-
-                data: {
-
-                    labels: labels,
-
-                    datasets: [
-                        {
-                            label: "Potência (W)",
-
-                            data: valores,
-
-                            borderWidth: 3,
-
-                            tension: 0.35,
-
-                            fill: true,
-
-                            pointRadius: 3
-                        }
-                    ]
-                },
-
-                options: {
-
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    scales: {
-
-                        y: {
-                            beginAtZero: true
-                        }
-
-                    }
-
-                }
-
-            }
+        criarGraficoTempoReal(
+            labels,
+            valores
         );
 
     } catch (erro) {
 
         console.error(
-            "ERRO TEMPO REAL:",
+            "Erro no gráfico em tempo real:",
             erro
         );
-
     }
-
 }
 
 
-// =====================================================
-// GRÁFICO DIÁRIO
-// =====================================================
+// ============================================================
+// CRIAR GRÁFICO EM TEMPO REAL
+// ============================================================
 
-async function carregarGraficoDiario() {
+function criarGraficoTempoReal(
+    labels,
+    valores
+) {
+
+    const canvas =
+        document.getElementById(
+            "realtimeChart"
+        );
+
+    if (!canvas) {
+
+        console.error(
+            "Canvas realtimeChart não encontrado."
+        );
+
+        return;
+    }
+
+
+    if (realtimeChart) {
+        realtimeChart.destroy();
+    }
+
+
+    realtimeChart =
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+                        label: "Potência (W)",
+
+                        data: valores,
+
+                        borderWidth: 3,
+
+                        tension: 0.35,
+
+                        fill: true,
+
+                        pointRadius: 3,
+
+                        pointHoverRadius: 6
+                    }
+
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                interaction: {
+
+                    intersect: false,
+
+                    mode: "index"
+                },
+
+                plugins: {
+
+                    legend: {
+
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                return (
+                                    " Potência: " +
+                                    Number(
+                                        context.raw
+                                    ).toFixed(0) +
+                                    " W"
+                                );
+
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text: "Potência (W)"
+                        }
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Horário"
+                        }
+                    }
+                }
+            }
+        });
+}
+
+
+// ============================================================
+// CONSUMO DIÁRIO
+// ============================================================
+
+async function carregarConsumoDiario() {
 
     try {
 
-        const response = await fetch(
+        const resposta = await fetch(
             `${API_BASE_URL}/historico_diario`
         );
 
-        const dados = await response.json();
+        if (!resposta.ok) {
+
+            throw new Error(
+                "Erro no histórico diário"
+            );
+        }
+
+        const dados =
+            await resposta.json();
+
 
         console.log(
-            "DADOS DIÁRIOS:",
+            "Histórico diário:",
             dados
         );
 
-        if (!Array.isArray(dados)) {
 
-            console.error(
-                "A API diária não retornou uma lista:",
-                dados
-            );
+        const ultimos7 =
+            dados.slice(-7);
 
-            return;
-        }
 
         const labels =
-            dados.map(item =>
-                formatarData(
-                    item.data || item.data_ref
-                )
+            ultimos7.map(item =>
+                formatarData(item.data)
             );
+
 
         const valores =
-            dados.map(item =>
-                Number(
-                    item.consumo ??
-                    item.consumo_kwh ??
-                    item.consumo
-                )
+            ultimos7.map(item =>
+                Number(item.consumo)
             );
 
-        console.log(
-            "LABELS DIÁRIOS:",
-            labels
-        );
 
-        console.log(
-            "VALORES DIÁRIOS:",
+        criarGraficoDiario(
+            labels,
             valores
-        );
-
-
-        const canvas =
-            document.getElementById("dailyChart");
-
-        if (!canvas) {
-
-            console.error(
-                "dailyChart NÃO EXISTE NO HTML"
-            );
-
-            return;
-        }
-
-
-        if (dailyChart) {
-            dailyChart.destroy();
-        }
-
-
-        dailyChart = new Chart(
-            canvas,
-            {
-
-                type: "bar",
-
-                data: {
-
-                    labels: labels,
-
-                    datasets: [
-
-                        {
-                            label: "Consumo diário (kWh)",
-
-                            data: valores,
-
-                            borderWidth: 1,
-
-                            borderRadius: 8,
-
-                            maxBarThickness: 70
-                        }
-
-                    ]
-                },
-
-                options: {
-
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    plugins: {
-
-                        legend: {
-                            display: true
-                        },
-
-                        tooltip: {
-
-                            callbacks: {
-
-                                label: function(context) {
-
-                                    return (
-                                        " " +
-                                        Number(
-                                            context.raw
-                                        ).toFixed(3) +
-                                        " kWh"
-                                    );
-
-                                }
-
-                            }
-
-                        }
-
-                    },
-
-                    scales: {
-
-                        y: {
-
-                            beginAtZero: true,
-
-                            title: {
-
-                                display: true,
-
-                                text: "kWh"
-                            }
-
-                        },
-
-                        x: {
-
-                            title: {
-
-                                display: true,
-
-                                text: "Dia"
-                            }
-
-                        }
-
-                    }
-
-                }
-
-            }
         );
 
     } catch (erro) {
 
         console.error(
-            "ERRO GRÁFICO DIÁRIO:",
+            "Erro no consumo diário:",
             erro
         );
-
     }
-
 }
 
 
-// =====================================================
-// GRÁFICO MENSAL
-// =====================================================
+// ============================================================
+// CRIAR GRÁFICO DIÁRIO
+// ============================================================
 
-async function carregarGraficoMensal() {
+function criarGraficoDiario(
+    labels,
+    valores
+) {
+
+    const canvas =
+        document.getElementById(
+            "dailyChart"
+        );
+
+
+    if (!canvas) {
+
+        console.error(
+            "Canvas dailyChart não encontrado."
+        );
+
+        return;
+    }
+
+
+    if (dailyChart) {
+
+        dailyChart.destroy();
+
+    }
+
+
+    dailyChart =
+        new Chart(canvas, {
+
+            type: "bar",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+                        label: "Consumo (kWh)",
+
+                        data: valores,
+
+                        borderWidth: 1,
+
+                        borderRadius: 8,
+
+                        maxBarThickness: 60
+                    }
+
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                return (
+                                    " Consumo: " +
+                                    Number(
+                                        context.raw
+                                    ).toFixed(3) +
+                                    " kWh"
+                                );
+
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text: "Consumo (kWh)"
+                        }
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Data"
+                        }
+                    }
+                }
+            }
+        });
+}
+
+
+// ============================================================
+// CONSUMO MENSAL
+// ============================================================
+
+async function carregarConsumoMensal() {
 
     try {
 
-        const response = await fetch(
+        const resposta = await fetch(
             `${API_BASE_URL}/historico_mensal`
         );
 
-        const dados = await response.json();
+        if (!resposta.ok) {
+
+            throw new Error(
+                "Erro no histórico mensal"
+            );
+        }
+
+        const dados =
+            await resposta.json();
+
 
         console.log(
-            "DADOS MENSAIS:",
+            "Histórico mensal:",
             dados
         );
 
-        if (!Array.isArray(dados)) {
-
-            console.error(
-                "A API mensal não retornou uma lista:",
-                dados
-            );
-
-            return;
-        }
 
         const labels =
             dados.map(item =>
-                formatarMes(
-                    item.mes
-                )
+                formatarMes(item.mes)
             );
+
 
         const valores =
             dados.map(item =>
-                Number(
-                    item.consumo ??
-                    item.consumo_kwh ??
-                    item.consumo
-                )
+                Number(item.consumo)
             );
 
 
-        console.log(
-            "LABELS MENSAIS:",
-            labels
-        );
-
-        console.log(
-            "VALORES MENSAIS:",
+        criarGraficoMensal(
+            labels,
             valores
-        );
-
-
-        const canvas =
-            document.getElementById("monthlyChart");
-
-        if (!canvas) {
-
-            console.error(
-                "monthlyChart NÃO EXISTE NO HTML"
-            );
-
-            return;
-        }
-
-
-        if (monthlyChart) {
-            monthlyChart.destroy();
-        }
-
-
-        monthlyChart = new Chart(
-            canvas,
-            {
-
-                type: "bar",
-
-                data: {
-
-                    labels: labels,
-
-                    datasets: [
-
-                        {
-                            label: "Consumo mensal (kWh)",
-
-                            data: valores,
-
-                            borderWidth: 1,
-
-                            borderRadius: 8,
-
-                            maxBarThickness: 80
-                        }
-
-                    ]
-                },
-
-                options: {
-
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    plugins: {
-
-                        legend: {
-                            display: true
-                        },
-
-                        tooltip: {
-
-                            callbacks: {
-
-                                label: function(context) {
-
-                                    return (
-                                        " " +
-                                        Number(
-                                            context.raw
-                                        ).toFixed(3) +
-                                        " kWh"
-                                    );
-
-                                }
-
-                            }
-
-                        }
-
-                    },
-
-                    scales: {
-
-                        y: {
-
-                            beginAtZero: true,
-
-                            title: {
-
-                                display: true,
-
-                                text: "kWh"
-                            }
-
-                        },
-
-                        x: {
-
-                            title: {
-
-                                display: true,
-
-                                text: "Mês"
-                            }
-
-                        }
-
-                    }
-
-                }
-
-            }
         );
 
     } catch (erro) {
 
         console.error(
-            "ERRO GRÁFICO MENSAL:",
+            "Erro no consumo mensal:",
             erro
         );
-
     }
-
 }
 
 
-// =====================================================
-// FORMATAÇÕES
-// =====================================================
+// ============================================================
+// CRIAR GRÁFICO MENSAL
+// ============================================================
+
+function criarGraficoMensal(
+    labels,
+    valores
+) {
+
+    const canvas =
+        document.getElementById(
+            "monthlyChart"
+        );
+
+
+    if (!canvas) {
+
+        console.error(
+            "Canvas monthlyChart não encontrado."
+        );
+
+        return;
+    }
+
+
+    if (monthlyChart) {
+
+        monthlyChart.destroy();
+
+    }
+
+
+    monthlyChart =
+        new Chart(canvas, {
+
+            type: "bar",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+                        label: "Consumo (kWh)",
+
+                        data: valores,
+
+                        borderWidth: 1,
+
+                        borderRadius: 8,
+
+                        maxBarThickness: 70
+                    }
+
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                return (
+                                    " Consumo: " +
+                                    Number(
+                                        context.raw
+                                    ).toFixed(3) +
+                                    " kWh"
+                                );
+
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text: "Consumo (kWh)"
+                        }
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Mês"
+                        }
+                    }
+                }
+            }
+        });
+}
+
+
+// ============================================================
+// FORMATAR DATA
+// ============================================================
 
 function formatarData(data) {
 
@@ -534,18 +700,23 @@ function formatarData(data) {
     }
 
     const partes =
-        String(data).split("-");
+        data.split("-");
 
-    if (partes.length === 3) {
-
-        return `${partes[2]}/${partes[1]}`;
-
+    if (partes.length !== 3) {
+        return data;
     }
 
-    return data;
-
+    return (
+        partes[2] +
+        "/" +
+        partes[1]
+    );
 }
 
+
+// ============================================================
+// FORMATAR MÊS
+// ============================================================
 
 function formatarMes(mes) {
 
@@ -554,18 +725,23 @@ function formatarMes(mes) {
     }
 
     const partes =
-        String(mes).split("-");
+        mes.split("-");
 
-    if (partes.length === 2) {
-
-        return `${partes[1]}/${partes[0]}`;
-
+    if (partes.length !== 2) {
+        return mes;
     }
 
-    return mes;
-
+    return (
+        partes[1] +
+        "/" +
+        partes[0]
+    );
 }
 
+
+// ============================================================
+// FORMATAR HORA
+// ============================================================
 
 function formatarHora(dataHora) {
 
@@ -588,37 +764,38 @@ function formatarHora(dataHora) {
             second: "2-digit"
         }
     );
-
 }
 
 
-// =====================================================
-// ATUALIZAR TUDO
-// =====================================================
+// ============================================================
+// ATUALIZAR DASHBOARD
+// ============================================================
 
 async function atualizarDashboard() {
 
     console.log(
-        "========== ATUALIZANDO =========="
+        "Atualizando dashboard..."
     );
 
     await carregarDadosAtuais();
 
     await carregarTempoReal();
 
-    await carregarGraficoDiario();
+    await carregarConsumoDiario();
 
-    await carregarGraficoMensal();
+    await carregarConsumoMensal();
 
 }
 
 
-// =====================================================
+// ============================================================
 // BOTÃO ATUALIZAR
-// =====================================================
+// ============================================================
 
 const refreshBtn =
-    document.getElementById("refreshBtn");
+    document.getElementById(
+        "refreshBtn"
+    );
 
 if (refreshBtn) {
 
@@ -630,77 +807,19 @@ if (refreshBtn) {
 }
 
 
-// =====================================================
-// MODO NOTURNO
-// =====================================================
-
-const themeBtn =
-    document.getElementById("themeBtn");
-
-const temaSalvo =
-    localStorage.getItem("tema");
-
-if (temaSalvo === "dark") {
-
-    document.body.classList.add("dark");
-
-    if (themeBtn) {
-        themeBtn.textContent = "☀️";
-    }
-
-}
-
-
-if (themeBtn) {
-
-    themeBtn.addEventListener(
-        "click",
-        function() {
-
-            document.body.classList.toggle(
-                "dark"
-            );
-
-            const dark =
-                document.body.classList.contains(
-                    "dark"
-                );
-
-            if (dark) {
-
-                themeBtn.textContent = "☀️";
-
-                localStorage.setItem(
-                    "tema",
-                    "dark"
-                );
-
-            } else {
-
-                themeBtn.textContent = "🌙";
-
-                localStorage.setItem(
-                    "tema",
-                    "light"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// =====================================================
-// INICIAR
-// =====================================================
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function() {
 
         atualizarDashboard();
+
+
+        // Atualiza automaticamente
+        // a cada 10 segundos
 
         setInterval(
             atualizarDashboard,
