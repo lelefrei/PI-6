@@ -399,11 +399,6 @@ async function carregarPotenciaTempoReal() {
         const ultimasLeituras =
             dadosOrdenados.slice(-30);
 
-        const labels =
-            ultimasLeituras.map(
-                item => formatarHora(
-                    item.data_hora
-                )
             );
 
         const valores =
