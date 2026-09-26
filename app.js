@@ -24,10 +24,11 @@ let graficoAlertas = null;
 // 3. ELEMENTOS DA PÁGINA
 // ============================================================
 
-const potenciaElement = document.getElementById("potenciaAtual");
+const potenciaElement = document.getElementById("potencia");
 const energiaElement = document.getElementById("energiaDia");
-const picoElement = document.getElementById("picoDia");
-const alertasElement = document.getElementById("alertasHoje");
+const picoElement = document.getElementById("pico");
+const alertasElement = document.getElementById("contadorAlertas");
+const custoElement = document.getElementById("custo");
 
 
 // ============================================================
@@ -154,9 +155,9 @@ function criarGraficoConsumoDiario(
     valores
 ) {
 
-    const canvas = document.getElementById(
-        "graficoConsumoDiario"
-    );
+  const canvas = document.getElementById(
+    "dailyChart"
+);
 
     if (!canvas) {
         return;
@@ -320,10 +321,9 @@ function criarGraficoConsumoMensal(
     valores
 ) {
 
-    const canvas = document.getElementById(
-        "graficoConsumoMensal"
-    );
-
+  const canvas = document.getElementById(
+    "monthlyChart"
+);
     if (!canvas) {
         return;
     }
@@ -478,8 +478,8 @@ function criarGraficoTempoReal(
 ) {
 
     const canvas = document.getElementById(
-        "graficoTempoReal"
-    );
+    "realtimeChart"
+);
 
     if (!canvas) {
         return;
