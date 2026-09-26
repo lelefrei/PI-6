@@ -326,7 +326,7 @@ function criarGraficoTempoReal(
 
                             display: true,
 
-                            text: "Horário"
+                
                         }
                     }
                 }
