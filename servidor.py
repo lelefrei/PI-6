@@ -1,59 +1,196 @@
+import os
+import time
+import random
+import threading
+from datetime import datetime
+
+import psycopg2
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
-import os
+
+
+# ============================================================
+# CONFIGURAÇÃO DO FLASK
+# ============================================================
 
 app = Flask(__name__)
 CORS(app)
 
 
 # ============================================================
-# CONFIGURAÇÃO DO BANCO DE DADOS
+# BANCO DE DADOS - SUPABASE
 # ============================================================
-
-# No Render:
-# DATABASE_URL será configurada nas Environment Variables.
-#
-# Localmente, você também pode usar DATABASE_URL.
-#
-# Exemplo:
-# postgresql://postgres.xxxxx:SENHA@aws-0-xxxxx.pooler.supabase.com:5432/postgres
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL:
-    DB_CONFIG = {
-        "dsn": DATABASE_URL
-    }
-else:
-    # Configuração alternativa para execução local
-    DB_CONFIG = {
-        "host": os.getenv("SUPABASE_DB_HOST"),
-        "database": os.getenv("SUPABASE_DB_NAME", "postgres"),
-        "user": os.getenv("SUPABASE_DB_USER", "postgres"),
-        "password": os.getenv("SUPABASE_DB_PASSWORD"),
-        "port": os.getenv("SUPABASE_DB_PORT", "5432"),
-        "sslmode": os.getenv("SUPABASE_DB_SSLMODE", "require")
-    }
+if not DATABASE_URL:
+    raise RuntimeError("A variável DATABASE_URL não foi configurada no Render.")
+
+
+def conectar_banco():
+    """
+    Cria uma conexão com o PostgreSQL do Supabase.
+    """
+    return psycopg2.connect(DATABASE_URL)
 
 
 # ============================================================
-# CONTROLE DE ALERTA
+# CONFIGURAÇÃO DO MONITORAMENTO
 # ============================================================
 
-passou_limite_global = False
+LIMITE_ALERTA = 1400
+
+# Tempo entre cada leitura simulada
+INTERVALO_DADOS = 5
+
+# Tensão utilizada para calcular a potência
+TENSAO = 220
 
 
 # ============================================================
-# ROTA DE TESTE / HEALTH CHECK
+# GERADOR AUTOMÁTICO DE DADOS
 # ============================================================
 
-@app.route('/health')
+def gerar_dados_automaticamente():
+
+    print("==========================================")
+    print("GERADOR AUTOMÁTICO DE DADOS INICIADO")
+    print("==========================================")
+
+    while True:
+
+        try:
+
+            # ------------------------------------------------
+            # GERA UMA CORRENTE ALEATÓRIA
+            # ------------------------------------------------
+
+            corrente = round(
+                random.uniform(2.0, 8.0),
+                2
+            )
+
+            # ------------------------------------------------
+            # CALCULA A POTÊNCIA
+            # P = V x I
+            # ------------------------------------------------
+
+            potencia = round(
+                TENSAO * corrente,
+                2
+            )
+
+            # ------------------------------------------------
+            # DATA E HORA
+            # ------------------------------------------------
+
+            data_hora = datetime.now()
+
+            # ------------------------------------------------
+            # CONECTA AO BANCO
+            # ------------------------------------------------
+
+            conn = conectar_banco()
+            cursor = conn.cursor()
+
+            # ------------------------------------------------
+            # INSERE A LEITURA
+            # ------------------------------------------------
+
+            cursor.execute(
+                """
+                INSERT INTO public.leituras_energia
+                (
+                    sensor_id,
+                    corrente_amperes,
+                    potencia_watts,
+                    data_hora
+                )
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    "ESP32_SIMULADO",
+                    corrente,
+                    potencia,
+                    data_hora
+                )
+            )
+
+            # ------------------------------------------------
+            # VERIFICA SE ULTRAPASSOU O LIMITE
+            # ------------------------------------------------
+
+            if potencia > LIMITE_ALERTA:
+
+                cursor.execute(
+                    """
+                    INSERT INTO public.historico_alertas
+                    (
+                        potencia_watts,
+                        limite_definido,
+                        data_hora
+                    )
+                    VALUES (%s, %s, %s)
+                    """,
+                    (
+                        potencia,
+                        LIMITE_ALERTA,
+                        data_hora
+                    )
+                )
+
+                print(
+                    f"⚠️ ALERTA! "
+                    f"Potência: {potencia} W "
+                    f"(limite: {LIMITE_ALERTA} W)"
+                )
+
+            # ------------------------------------------------
+            # CONFIRMA AS ALTERAÇÕES
+            # ------------------------------------------------
+
+            conn.commit()
+
+            cursor.close()
+            conn.close()
+
+            print(
+                f"✓ Dados inseridos | "
+                f"Corrente: {corrente} A | "
+                f"Potência: {potencia} W | "
+                f"Horário: {data_hora.strftime('%H:%M:%S')}"
+            )
+
+        except Exception as erro:
+
+            print("❌ Erro ao gerar dados:")
+            print(erro)
+
+        # ----------------------------------------------------
+        # AGUARDA 5 SEGUNDOS
+        # ----------------------------------------------------
+
+        time.sleep(INTERVALO_DADOS)
+
+
+# ============================================================
+# ROTA DE TESTE
+# ============================================================
+
+@app.route("/health", methods=["GET"])
 def health():
-    conn = None
 
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+
+        conn = conectar_banco()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT 1;")
+
+        cursor.fetchone()
+
+        cursor.close()
+        conn.close()
 
         return jsonify({
             "status": "ok",
@@ -61,154 +198,139 @@ def health():
             "supabase": True
         })
 
-    except Exception as e:
+    except Exception as erro:
+
         return jsonify({
             "status": "erro",
-            "erro": str(e)
+            "database": "postgres",
+            "supabase": False,
+            "erro": str(erro)
         }), 500
-
-    finally:
-        if conn:
-            conn.close()
 
 
 # ============================================================
 # DADOS ATUAIS
 # ============================================================
 
-@app.route('/dados_atuais')
+@app.route("/dados_atuais", methods=["GET"])
 def dados_atuais():
-    global passou_limite_global
-
-    conn = None
 
     try:
-        limite_usuario = float(
-            request.args.get('limite', 14080)
-        )
 
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
+        conn = conectar_banco()
+        cursor = conn.cursor()
 
         # ----------------------------------------------------
-        # Última potência registrada
+        # ÚLTIMA POTÊNCIA
         # ----------------------------------------------------
 
-        cur.execute("""
+        cursor.execute(
+            """
             SELECT potencia_watts
-            FROM leituras_energia
+            FROM public.leituras_energia
             ORDER BY data_hora DESC
             LIMIT 1
-        """)
+            """
+        )
 
-        res = cur.fetchone()
+        resultado = cursor.fetchone()
 
-        potencia = float(res[0]) if res else 0.0
-
-        # ----------------------------------------------------
-        # Verifica limite e registra alerta
-        # ----------------------------------------------------
-
-        if potencia > limite_usuario:
-
-            if not passou_limite_global:
-
-                cur.execute("""
-                    INSERT INTO historico_alertas
-                    (
-                        potencia_watts,
-                        limite_definido
-                    )
-                    VALUES (%s, %s)
-                """, (
-                    potencia,
-                    limite_usuario
-                ))
-
-                conn.commit()
-
-                passou_limite_global = True
-
+        if resultado:
+            potencia_atual = float(resultado[0])
         else:
-            passou_limite_global = False
+            potencia_atual = 0
+
 
         # ----------------------------------------------------
-        # Energia consumida no dia
+        # CONSUMO DO DIA
         # ----------------------------------------------------
 
-        cur.execute("""
+        cursor.execute(
+            """
             SELECT
-                SUM(
-                    potencia_watts / 1000.0
-                    * (2.0 / 3600.0)
+                COALESCE(
+                    SUM(
+                        potencia_watts / 1000.0 *
+                        (5.0 / 3600.0)
+                    ),
+                    0
                 )
-            FROM leituras_energia
-            WHERE data_hora::date = current_date
-        """)
-
-        res_energia = cur.fetchone()
-
-        energia_dia = (
-            float(res_energia[0])
-            if res_energia
-            and res_energia[0] is not None
-            else 0.0
+            FROM public.leituras_energia
+            WHERE DATE(data_hora) = CURRENT_DATE
+            """
         )
 
+        resultado = cursor.fetchone()
+
+        energia_dia = float(resultado[0] or 0)
+
+
         # ----------------------------------------------------
-        # Pico de potência do dia
+        # MAIOR POTÊNCIA DO DIA
         # ----------------------------------------------------
 
-        cur.execute("""
-            SELECT MAX(potencia_watts)
-            FROM leituras_energia
-            WHERE data_hora::date = current_date
-        """)
-
-        res_pico = cur.fetchone()
-
-        pico_dia = (
-            float(res_pico[0])
-            if res_pico
-            and res_pico[0] is not None
-            else 0.0
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(
+                    MAX(potencia_watts),
+                    0
+                )
+            FROM public.leituras_energia
+            WHERE DATE(data_hora) = CURRENT_DATE
+            """
         )
 
+        resultado = cursor.fetchone()
+
+        pico_dia = float(resultado[0] or 0)
+
+
         # ----------------------------------------------------
-        # Quantidade de alertas do dia
+        # QUANTIDADE DE ALERTAS DO DIA
         # ----------------------------------------------------
 
-        cur.execute("""
-            SELECT COUNT(*)
-            FROM historico_alertas
-            WHERE data_hora::date = current_date
-        """)
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*)
+            FROM public.historico_alertas
+            WHERE DATE(data_hora) = CURRENT_DATE
+            """
+        )
 
-        alertas_hoje = cur.fetchone()[0]
+        resultado = cursor.fetchone()
 
-        cur.close()
+        alertas_hoje = int(resultado[0] or 0)
+
+
+        cursor.close()
         conn.close()
 
-        # ----------------------------------------------------
-        # Resposta
-        # ----------------------------------------------------
 
         return jsonify({
-            "potencia": round(potencia, 2),
-            "energiaDia": round(energia_dia, 3),
-            "picoDia": round(pico_dia, 2),
+
+            "potencia": potencia_atual,
+
+            "energiaDia": round(
+                energia_dia,
+                3
+            ),
+
+            "picoDia": pico_dia,
+
             "alertasHoje": alertas_hoje
+
         })
 
-    except Exception as e:
 
-        print(f"Erro em dados_atuais: {e}")
+    except Exception as erro:
 
-        if conn:
-            conn.close()
+        print("Erro em /dados_atuais:")
+        print(erro)
 
         return jsonify({
-            "erro": str(e)
+            "erro": str(erro)
         }), 500
 
 
@@ -216,201 +338,174 @@ def dados_atuais():
 # HISTÓRICO DIÁRIO
 # ============================================================
 
-@app.route('/historico_diario')
+@app.route("/historico_diario", methods=["GET"])
 def historico_diario():
-
-    conn = None
 
     try:
 
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
+        conn = conectar_banco()
+        cursor = conn.cursor()
 
-        cur.execute("""
+        cursor.execute(
+            """
             SELECT
-                c.data_ref,
-                c.consumo_kwh,
-                COALESCE(a.total_alertas, 0)
-                    AS alertas_do_dia
+                DATE(data_hora) AS dia,
 
-            FROM (
+                COALESCE(
+                    SUM(
+                        potencia_watts / 1000.0 *
+                        (5.0 / 3600.0)
+                    ),
+                    0
+                ) AS consumo,
 
-                SELECT
-                    data_hora::date AS data_ref,
+                COALESCE(
+                    MAX(potencia_watts),
+                    0
+                ) AS pico
 
-                    ROUND(
-                        SUM(
-                            potencia_watts / 1000.0
-                            * (2.0 / 3600.0)
-                        ),
-                        2
-                    ) AS consumo_kwh
+            FROM public.leituras_energia
 
-                FROM leituras_energia
+            GROUP BY DATE(data_hora)
 
-                GROUP BY data_ref
+            ORDER BY dia ASC
 
-            ) c
+            LIMIT 30
+            """
+        )
 
-            LEFT JOIN (
+        resultados = cursor.fetchall()
 
-                SELECT
-                    data_hora::date AS data_ref,
-                    COUNT(*) AS total_alertas
-
-                FROM historico_alertas
-
-                GROUP BY data_ref
-
-            ) a
-
-            ON c.data_ref = a.data_ref
-
-            ORDER BY c.data_ref DESC
-
-            LIMIT 7
-        """)
-
-        dados = cur.fetchall()
-
-        cur.close()
+        cursor.close()
         conn.close()
 
-        # Inverte para ficar do mais antigo
-        # para o mais recente
 
-        dados_invertidos = list(
-            reversed(dados)
-        )
+        dados = []
 
-        valores = [
-            float(d[1])
-            for d in dados_invertidos
-        ]
+        for linha in resultados:
 
-        media_7_dias = (
-            sum(valores) / len(valores)
-            if valores
-            else 0.0
-        )
+            dados.append({
 
-        return jsonify({
+                "data": str(linha[0]),
 
-            "labels": [
-                d[0].strftime("%d/%m")
-                for d in dados_invertidos
-            ],
+                "consumo": round(
+                    float(linha[1] or 0),
+                    3
+                ),
 
-            "valores": valores,
+                "pico": round(
+                    float(linha[2] or 0),
+                    2
+                )
 
-            "alertas": [
-                int(d[2])
-                for d in dados_invertidos
-            ],
+            })
 
-            "media": round(
-                media_7_dias,
-                2
-            )
-        })
 
-    except Exception as e:
+        return jsonify(dados)
 
-        print(
-            f"Erro no histórico diário: {e}"
-        )
 
-        if conn:
-            conn.close()
+    except Exception as erro:
+
+        print("Erro em /historico_diario:")
+        print(erro)
 
         return jsonify({
-            "labels": [],
-            "valores": [],
-            "alertas": [],
-            "media": 0.0
-        })
+            "erro": str(erro)
+        }), 500
 
 
 # ============================================================
 # HISTÓRICO MENSAL
 # ============================================================
 
-@app.route('/historico_mensal')
+@app.route("/historico_mensal", methods=["GET"])
 def historico_mensal():
-
-    conn = None
 
     try:
 
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
+        conn = conectar_banco()
+        cursor = conn.cursor()
 
-        cur.execute("""
+        cursor.execute(
+            """
             SELECT
 
-                to_char(
-                    data_hora,
-                    'MM/YYYY'
-                ) AS mes_ref,
-
-                ROUND(
-                    SUM(
-                        potencia_watts / 1000.0
-                        * (2.0 / 3600.0)
+                TO_CHAR(
+                    DATE_TRUNC(
+                        'month',
+                        data_hora
                     ),
-                    2
-                ) AS consumo_kwh,
+                    'YYYY-MM'
+                ) AS mes,
 
-                EXTRACT(
-                    YEAR FROM data_hora
-                ) AS ano,
+                COALESCE(
+                    SUM(
+                        potencia_watts / 1000.0 *
+                        (5.0 / 3600.0)
+                    ),
+                    0
+                ) AS consumo,
 
-                EXTRACT(
-                    MONTH FROM data_hora
-                ) AS mes
+                COALESCE(
+                    MAX(potencia_watts),
+                    0
+                ) AS pico
 
-            FROM leituras_energia
+            FROM public.leituras_energia
 
             GROUP BY
-                mes_ref,
-                ano,
-                mes
+                DATE_TRUNC(
+                    'month',
+                    data_hora
+                )
 
             ORDER BY
-                ano ASC,
-                mes ASC
-        """)
+                DATE_TRUNC(
+                    'month',
+                    data_hora
+                ) ASC
 
-        dados = cur.fetchall()
-
-        cur.close()
-        conn.close()
-
-        return jsonify({
-
-            "labels": [
-                d[0]
-                for d in dados
-            ],
-
-            "valores": [
-                float(d[1])
-                for d in dados
-            ]
-        })
-
-    except Exception as e:
-
-        print(
-            f"Erro no histórico mensal: {e}"
+            LIMIT 12
+            """
         )
 
-        if conn:
-            conn.close()
+        resultados = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+
+        dados = []
+
+        for linha in resultados:
+
+            dados.append({
+
+                "mes": str(linha[0]),
+
+                "consumo": round(
+                    float(linha[1] or 0),
+                    3
+                ),
+
+                "pico": round(
+                    float(linha[2] or 0),
+                    2
+                )
+
+            })
+
+
+        return jsonify(dados)
+
+
+    except Exception as erro:
+
+        print("Erro em /historico_mensal:")
+        print(erro)
 
         return jsonify({
-            "labels": [],
-            "valores": []
+            "erro": str(erro)
         }), 500
 
 
@@ -418,219 +513,122 @@ def historico_mensal():
 # FILTRO AVANÇADO
 # ============================================================
 
-@app.route('/filtrar_avancado')
+@app.route("/filtrar_avancado", methods=["GET"])
 def filtrar_avancado():
-
-    conn = None
 
     try:
 
-        ano = request.args.get('ano')
-        mes = request.args.get('mes')
+        inicio = request.args.get("inicio")
+        fim = request.args.get("fim")
+
+
+        conn = conectar_banco()
+        cursor = conn.cursor()
+
 
         # ----------------------------------------------------
-        # Ano obrigatório
+        # SE NÃO INFORMAR DATAS
         # ----------------------------------------------------
 
-        if not ano:
+        if not inicio or not fim:
 
-            return jsonify({
-                "erro": "O parâmetro 'ano' é obrigatório"
-            }), 400
-
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
-
-        # ----------------------------------------------------
-        # CASO A
-        # Apenas o ano foi informado
-        # ----------------------------------------------------
-
-        if not mes or mes == "":
-
-            cur.execute("""
-
+            cursor.execute(
+                """
                 SELECT
-
-                    to_char(
-                        data_hora,
-                        'MM/YYYY'
-                    ) AS mes_ref,
-
-                    ROUND(
-                        SUM(
-                            potencia_watts / 1000.0
-                            * (2.0 / 3600.0)
-                        ),
-                        2
-                    ) AS consumo_kwh
-
-                FROM leituras_energia
-
-                WHERE EXTRACT(
-                    YEAR FROM data_hora
-                ) = %s
-
-                GROUP BY
-                    mes_ref,
-                    EXTRACT(MONTH FROM data_hora)
-
-                ORDER BY
-                    EXTRACT(MONTH FROM data_hora) ASC
-
-            """, (
-                int(ano),
-            ))
-
-            dados = cur.fetchall()
-
-            labels = [
-                d[0]
-                for d in dados
-            ]
-
-            valores = [
-                float(d[1])
-                for d in dados
-            ]
-
-            media = (
-                round(
-                    sum(valores)
-                    / len(valores),
-                    2
-                )
-                if valores
-                else 0.0
+                    data_hora,
+                    potencia_watts,
+                    corrente_amperes
+                FROM public.leituras_energia
+                ORDER BY data_hora DESC
+                LIMIT 100
+                """
             )
-
-        # ----------------------------------------------------
-        # CASO B
-        # Ano e mês foram informados
-        # ----------------------------------------------------
 
         else:
 
-            cur.execute("""
-
+            cursor.execute(
+                """
                 SELECT
-
-                    to_char(
-                        data_hora,
-                        'MM/YYYY'
-                    ) AS mes_ref,
-
-                    ROUND(
-                        SUM(
-                            potencia_watts / 1000.0
-                            * (2.0 / 3600.0)
-                        ),
-                        2
-                    ) AS consumo_kwh
-
-                FROM leituras_energia
-
-                WHERE
-                    EXTRACT(
-                        YEAR FROM data_hora
-                    ) = %s
-
-                    AND EXTRACT(
-                        MONTH FROM data_hora
-                    ) = %s
-
-                GROUP BY mes_ref
-
-            """, (
-                int(ano),
-                int(mes)
-            ))
-
-            res = cur.fetchone()
-
-            if res:
-
-                mes_str = (
-                    f"{int(mes):02d}/{ano}"
+                    data_hora,
+                    potencia_watts,
+                    corrente_amperes
+                FROM public.leituras_energia
+                WHERE data_hora BETWEEN %s AND %s
+                ORDER BY data_hora ASC
+                """,
+                (
+                    inicio,
+                    fim
                 )
+            )
 
-                labels = [
-                    mes_str
-                ]
 
-                valores = [
-                    float(res[1])
-                ]
+        resultados = cursor.fetchall()
 
-                media = float(
-                    res[1]
-                )
-
-            else:
-
-                mes_str = (
-                    f"{int(mes):02d}/{ano}"
-                )
-
-                labels = [
-                    mes_str
-                ]
-
-                valores = [
-                    0.0
-                ]
-
-                media = 0.0
-
-        cur.close()
+        cursor.close()
         conn.close()
 
+
+        dados = []
+
+
+        for linha in resultados:
+
+            dados.append({
+
+                "data_hora": linha[0].isoformat()
+                if linha[0]
+                else None,
+
+                "potencia": float(
+                    linha[1] or 0
+                ),
+
+                "corrente": float(
+                    linha[2] or 0
+                )
+
+            })
+
+
+        return jsonify(dados)
+
+
+    except Exception as erro:
+
+        print("Erro em /filtrar_avancado:")
+        print(erro)
+
         return jsonify({
-
-            "labels": labels,
-
-            "valores": valores,
-
-            "media": media
-        })
-
-    except Exception as e:
-
-        print(
-            f"Erro na filtragem avançada: {e}"
-        )
-
-        if conn:
-            conn.close()
-
-        return jsonify({
-
-            "labels": [],
-
-            "valores": [],
-
-            "media": 0.0,
-
-            "erro": str(e)
+            "erro": str(erro)
         }), 500
 
 
 # ============================================================
-# EXECUÇÃO
+# INICIA O GERADOR AUTOMÁTICO
 # ============================================================
 
-if __name__ == '__main__':
+thread = threading.Thread(
+    target=gerar_dados_automaticamente,
+    daemon=True
+)
 
-    port = int(
-        os.getenv("PORT", "5000")
-    )
+thread.start()
+
+
+# ============================================================
+# EXECUÇÃO LOCAL
+# ============================================================
+
+if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        port=port,
+        port=int(
+            os.environ.get(
+                "PORT",
+                5000
+            )
+        ),
         debug=False
     )
-
-if __name__ == '__main__':
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
