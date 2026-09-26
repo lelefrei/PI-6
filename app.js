@@ -1,43 +1,22 @@
 // ============================================================
-// TÔ LIGADO 2.0! — MONITOR DE ENERGIA
+// TÔ LIGADO! — MONITOR DE ENERGIA
 // ============================================================
 
 const API_BASE_URL = "https://pi6-3ggn.onrender.com";
 
-let realtimeChart = null;
-let dailyChart = null;
-let monthlyChart = null;
-
-const TARIFA = 0.95;
+let graficoTempoReal = null;
+let graficoConsumoDiario = null;
+let graficoConsumoMensal = null;
 
 
 // ============================================================
-// ELEMENTOS DO HTML
+// ELEMENTOS DOS CARDS
 // ============================================================
 
-const potenciaElement =
-    document.getElementById("potencia");
-
-const energiaElement =
-    document.getElementById("energiaDia");
-
-const custoElement =
-    document.getElementById("custo");
-
-const picoElement =
-    document.getElementById("pico");
-
-const contadorAlertasElement =
-    document.getElementById("contadorAlertas");
-
-const statusText =
-    document.getElementById("statusText");
-
-const statusPill =
-    document.getElementById("statusPill");
-
-const consumoStatus =
-    document.getElementById("consumoStatus");
+const potenciaElement = document.getElementById("potenciaAtual");
+const energiaElement = document.getElementById("energiaDia");
+const picoElement = document.getElementById("picoDia");
+const alertasElement = document.getElementById("alertasHoje");
 
 
 // ============================================================
@@ -53,81 +32,29 @@ async function carregarDadosAtuais() {
         );
 
         if (!resposta.ok) {
-            throw new Error("Erro na API");
+            throw new Error("Erro ao buscar dados atuais");
         }
 
         const dados = await resposta.json();
 
-        console.log("Dados atuais:", dados);
-
-
-        // POTÊNCIA
         if (potenciaElement) {
-
             potenciaElement.textContent =
                 `${Number(dados.potencia).toFixed(0)} W`;
-
         }
 
-
-        // ENERGIA
         if (energiaElement) {
-
             energiaElement.textContent =
                 `${Number(dados.energiaDia).toFixed(3)} kWh`;
-
         }
 
-
-        // CUSTO
-        if (custoElement) {
-
-            const custo =
-                Number(dados.energiaDia) * TARIFA;
-
-            custoElement.textContent =
-                `R$ ${custo.toFixed(2).replace(".", ",")}`;
-
-        }
-
-
-        // PICO
         if (picoElement) {
-
             picoElement.textContent =
                 `${Number(dados.picoDia).toFixed(0)} W`;
-
         }
 
-
-        // ALERTAS
-        if (contadorAlertasElement) {
-
-            contadorAlertasElement.textContent =
+        if (alertasElement) {
+            alertasElement.textContent =
                 dados.alertasHoje;
-
-        }
-
-
-        // STATUS
-        if (statusText) {
-
-            statusText.textContent =
-                "Online";
-
-        }
-
-        if (consumoStatus) {
-
-            consumoStatus.textContent =
-                "Monitoramento ativo";
-
-        }
-
-        if (statusPill) {
-
-            statusPill.classList.add("online");
-
         }
 
     } catch (erro) {
@@ -136,202 +63,7 @@ async function carregarDadosAtuais() {
             "Erro ao carregar dados atuais:",
             erro
         );
-
-        if (statusText) {
-            statusText.textContent =
-                "Offline";
-        }
-
-        if (consumoStatus) {
-            consumoStatus.textContent =
-                "Aguardando conexão";
-        }
     }
-}
-
-
-// ============================================================
-// GRÁFICO EM TEMPO REAL
-// ============================================================
-
-async function carregarTempoReal() {
-
-    try {
-
-        const resposta = await fetch(
-            `${API_BASE_URL}/filtrar_avancado`
-        );
-
-        if (!resposta.ok) {
-            throw new Error(
-                "Erro ao buscar leituras"
-            );
-        }
-
-        const dados = await resposta.json();
-
-        console.log(
-            "Leituras recebidas:",
-            dados
-        );
-
-
-        // Pega as últimas 30 leituras
-        const ultimas =
-            dados.slice(0, 30).reverse();
-
-
-        const labels =
-            ultimas.map(item =>
-                formatarHora(item.data_hora)
-            );
-
-
-        const valores =
-            ultimas.map(item =>
-                Number(item.potencia)
-            );
-
-
-        criarGraficoTempoReal(
-            labels,
-            valores
-        );
-
-    } catch (erro) {
-
-        console.error(
-            "Erro no gráfico em tempo real:",
-            erro
-        );
-    }
-}
-
-
-// ============================================================
-// CRIAR GRÁFICO EM TEMPO REAL
-// ============================================================
-
-function criarGraficoTempoReal(
-    labels,
-    valores
-) {
-
-    const canvas =
-        document.getElementById(
-            "realtimeChart"
-        );
-
-    if (!canvas) {
-
-        console.error(
-            "Canvas realtimeChart não encontrado."
-        );
-
-        return;
-    }
-
-
-    if (realtimeChart) {
-        realtimeChart.destroy();
-    }
-
-
-    realtimeChart =
-        new Chart(canvas, {
-
-            type: "line",
-
-            data: {
-
-                labels: labels,
-
-                datasets: [
-
-                    {
-                        label: "Potência (W)",
-
-                        data: valores,
-
-                        borderWidth: 3,
-
-                        tension: 0.35,
-
-                        fill: true,
-
-                        pointRadius: 3,
-
-                        pointHoverRadius: 6
-                    }
-
-                ]
-            },
-
-            options: {
-
-                responsive: true,
-
-                maintainAspectRatio: false,
-
-                interaction: {
-
-                    intersect: false,
-
-                    mode: "index"
-                },
-
-                plugins: {
-
-                    legend: {
-
-                        display: true
-                    },
-
-                    tooltip: {
-
-                        callbacks: {
-
-                            label: function(context) {
-
-                                return (
-                                    " Potência: " +
-                                    Number(
-                                        context.raw
-                                    ).toFixed(0) +
-                                    " W"
-                                );
-
-                            }
-                        }
-                    }
-                },
-
-                scales: {
-
-                    y: {
-
-                        beginAtZero: true,
-
-                        title: {
-
-                            display: true,
-
-                            text: "Potência (W)"
-                        }
-                    },
-
-                    x: {
-
-                        title: {
-
-                            display: true,
-
-                
-                        }
-                    }
-                }
-            }
-        });
 }
 
 
@@ -348,39 +80,27 @@ async function carregarConsumoDiario() {
         );
 
         if (!resposta.ok) {
-
             throw new Error(
-                "Erro no histórico diário"
+                "Erro ao buscar histórico diário"
             );
         }
 
-        const dados =
-            await resposta.json();
-
+        const dados = await resposta.json();
 
         console.log(
-            "Histórico diário:",
+            "Dados consumo diário:",
             dados
         );
 
+        const labels = dados.map(
+            item => formatarData(item.data)
+        );
 
-        const ultimos7 =
-            dados.slice(-7);
+        const valores = dados.map(
+            item => Number(item.consumo)
+        );
 
-
-        const labels =
-            ultimos7.map(item =>
-                formatarData(item.data)
-            );
-
-
-        const valores =
-            ultimos7.map(item =>
-                Number(item.consumo)
-            );
-
-
-        criarGraficoDiario(
+        criarGraficoConsumoDiario(
             labels,
             valores
         );
@@ -396,38 +116,31 @@ async function carregarConsumoDiario() {
 
 
 // ============================================================
-// CRIAR GRÁFICO DIÁRIO
+// GRÁFICO CONSUMO DIÁRIO
 // ============================================================
 
-function criarGraficoDiario(
+function criarGraficoConsumoDiario(
     labels,
     valores
 ) {
 
     const canvas =
         document.getElementById(
-            "dailyChart"
+            "graficoConsumoDiario"
         );
-
 
     if (!canvas) {
-
         console.error(
-            "Canvas dailyChart não encontrado."
+            "Canvas graficoConsumoDiario não encontrado."
         );
-
         return;
     }
 
-
-    if (dailyChart) {
-
-        dailyChart.destroy();
-
+    if (graficoConsumoDiario) {
+        graficoConsumoDiario.destroy();
     }
 
-
-    dailyChart =
+    graficoConsumoDiario =
         new Chart(canvas, {
 
             type: "bar",
@@ -445,9 +158,7 @@ function criarGraficoDiario(
 
                         borderWidth: 1,
 
-                        borderRadius: 8,
-
-                        maxBarThickness: 60
+                        borderRadius: 8
                     }
 
                 ]
@@ -462,7 +173,6 @@ function criarGraficoDiario(
                 plugins: {
 
                     legend: {
-
                         display: true
                     },
 
@@ -472,13 +182,9 @@ function criarGraficoDiario(
 
                             label: function(context) {
 
-                                return (
-                                    " Consumo: " +
-                                    Number(
-                                        context.raw
-                                    ).toFixed(3) +
-                                    " kWh"
-                                );
+                                return ` ${Number(
+                                    context.raw
+                                ).toFixed(3)} kWh`;
 
                             }
                         }
@@ -527,35 +233,27 @@ async function carregarConsumoMensal() {
         );
 
         if (!resposta.ok) {
-
             throw new Error(
-                "Erro no histórico mensal"
+                "Erro ao buscar histórico mensal"
             );
         }
 
-        const dados =
-            await resposta.json();
-
+        const dados = await resposta.json();
 
         console.log(
-            "Histórico mensal:",
+            "Dados consumo mensal:",
             dados
         );
 
+        const labels = dados.map(
+            item => formatarMes(item.mes)
+        );
 
-        const labels =
-            dados.map(item =>
-                formatarMes(item.mes)
-            );
+        const valores = dados.map(
+            item => Number(item.consumo)
+        );
 
-
-        const valores =
-            dados.map(item =>
-                Number(item.consumo)
-            );
-
-
-        criarGraficoMensal(
+        criarGraficoConsumoMensal(
             labels,
             valores
         );
@@ -571,38 +269,31 @@ async function carregarConsumoMensal() {
 
 
 // ============================================================
-// CRIAR GRÁFICO MENSAL
+// GRÁFICO CONSUMO MENSAL
 // ============================================================
 
-function criarGraficoMensal(
+function criarGraficoConsumoMensal(
     labels,
     valores
 ) {
 
     const canvas =
         document.getElementById(
-            "monthlyChart"
+            "graficoConsumoMensal"
         );
-
 
     if (!canvas) {
-
         console.error(
-            "Canvas monthlyChart não encontrado."
+            "Canvas graficoConsumoMensal não encontrado."
         );
-
         return;
     }
 
-
-    if (monthlyChart) {
-
-        monthlyChart.destroy();
-
+    if (graficoConsumoMensal) {
+        graficoConsumoMensal.destroy();
     }
 
-
-    monthlyChart =
+    graficoConsumoMensal =
         new Chart(canvas, {
 
             type: "bar",
@@ -620,9 +311,7 @@ function criarGraficoMensal(
 
                         borderWidth: 1,
 
-                        borderRadius: 8,
-
-                        maxBarThickness: 70
+                        borderRadius: 8
                     }
 
                 ]
@@ -637,7 +326,6 @@ function criarGraficoMensal(
                 plugins: {
 
                     legend: {
-
                         display: true
                     },
 
@@ -647,13 +335,9 @@ function criarGraficoMensal(
 
                             label: function(context) {
 
-                                return (
-                                    " Consumo: " +
-                                    Number(
-                                        context.raw
-                                    ).toFixed(3) +
-                                    " kWh"
-                                );
+                                return ` ${Number(
+                                    context.raw
+                                ).toFixed(3)} kWh`;
 
                             }
                         }
@@ -690,48 +374,191 @@ function criarGraficoMensal(
 
 
 // ============================================================
-// FORMATAR DATA
+// POTÊNCIA EM TEMPO REAL
 // ============================================================
 
-function formatarHora(dataHora) {
+async function carregarPotenciaTempoReal() {
 
-    if (!dataHora) {
-        return "";
-    }
+    try {
 
-    let valor = String(dataHora).trim();
+        const resposta = await fetch(
+            `${API_BASE_URL}/filtrar_avancado`
+        );
 
-    // Os dados do servidor estão em UTC
-    // Adiciona o identificador UTC quando o timestamp
-    // não possui informação de fuso horário.
-    if (
-        /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(valor) &&
-        !/[Zz]|[+-]\d{2}:\d{2}$/.test(valor)
-    ) {
-        valor = valor.replace(" ", "T") + "Z";
-    }
-
-    const data = new Date(valor);
-
-    if (isNaN(data.getTime())) {
-        return dataHora;
-    }
-
-    // Converte automaticamente para o horário de São Paulo
-    return data.toLocaleTimeString(
-        "pt-BR",
-        {
-            timeZone: "America/Sao_Paulo",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
+        if (!resposta.ok) {
+            throw new Error(
+                "Erro ao buscar potência"
+            );
         }
-    );
+
+        const dados = await resposta.json();
+
+        const dadosOrdenados =
+            [...dados].reverse();
+
+        const ultimasLeituras =
+            dadosOrdenados.slice(-30);
+
+        const labels =
+            ultimasLeituras.map(
+                item => formatarHora(
+                    item.data_hora
+                )
+            );
+
+        const valores =
+            ultimasLeituras.map(
+                item => Number(item.potencia)
+            );
+
+        criarGraficoTempoReal(
+            labels,
+            valores
+        );
+
+    } catch (erro) {
+
+        console.error(
+            "Erro na potência em tempo real:",
+            erro
+        );
+    }
 }
 
 
 // ============================================================
-// FORMATAR MÊS
+// GRÁFICO TEMPO REAL
+// ============================================================
+
+function criarGraficoTempoReal(
+    labels,
+    valores
+) {
+
+    const canvas =
+        document.getElementById(
+            "graficoTempoReal"
+        );
+
+    if (!canvas) {
+        return;
+    }
+
+    if (graficoTempoReal) {
+        graficoTempoReal.destroy();
+    }
+
+    graficoTempoReal =
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+                        label: "Potência (W)",
+
+                        data: valores,
+
+                        tension: 0.35,
+
+                        fill: true,
+
+                        pointRadius: 3,
+
+                        pointHoverRadius: 6,
+
+                        borderWidth: 2
+                    }
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                interaction: {
+
+                    intersect: false,
+
+                    mode: "index"
+                },
+
+                plugins: {
+
+                    legend: {
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                return ` ${Number(
+                                    context.raw
+                                ).toFixed(0)} W`;
+
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text: "Potência (W)"
+                        }
+                    },
+
+                    x: {
+                        // Oculta os horários no eixo inferior.
+                        // O horário correto continua disponível no tooltip ao passar o mouse.
+                        display: false
+                    }
+                }
+            }
+        });
+}
+
+
+// ============================================================
+// FORMATAÇÃO DE DATA
+// ============================================================
+
+function formatarData(data) {
+
+    if (!data) {
+        return "";
+    }
+
+    const partes =
+        data.split("-");
+
+    if (partes.length !== 3) {
+        return data;
+    }
+
+    return `${partes[2]}/${partes[1]}`;
+}
+
+
+// ============================================================
+// FORMATAÇÃO DE MÊS
 // ============================================================
 
 function formatarMes(mes) {
@@ -747,16 +574,12 @@ function formatarMes(mes) {
         return mes;
     }
 
-    return (
-        partes[1] +
-        "/" +
-        partes[0]
-    );
+    return `${partes[1]}/${partes[0]}`;
 }
 
 
 // ============================================================
-// FORMATAR HORA
+// FORMATAÇÃO DE HORA
 // ============================================================
 
 function formatarHora(dataHora) {
@@ -765,16 +588,28 @@ function formatarHora(dataHora) {
         return "";
     }
 
-    const data =
-        new Date(dataHora);
+    let valor = String(dataHora).trim();
+
+    // Os timestamps do banco podem chegar sem informação de fuso.
+    // Nesse caso, tratamos o valor como UTC e convertemos para São Paulo.
+    if (
+        /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(valor) &&
+        !(/[Zz]|[+-]\d{2}:\d{2}$/.test(valor))
+    ) {
+        valor = valor.replace(" ", "T") + "Z";
+    }
+
+    const data = new Date(valor);
 
     if (isNaN(data.getTime())) {
         return dataHora;
     }
 
+    // Horário de Brasília / São Paulo (UTC-3).
     return data.toLocaleTimeString(
         "pt-BR",
         {
+            timeZone: "America/Sao_Paulo",
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit"
@@ -784,42 +619,18 @@ function formatarHora(dataHora) {
 
 
 // ============================================================
-// ATUALIZAR DASHBOARD
+// ATUALIZAÇÃO COMPLETA
 // ============================================================
 
 async function atualizarDashboard() {
 
-    console.log(
-        "Atualizando dashboard..."
-    );
-
     await carregarDadosAtuais();
 
-    await carregarTempoReal();
+    await carregarPotenciaTempoReal();
 
     await carregarConsumoDiario();
 
     await carregarConsumoMensal();
-
-}
-
-
-// ============================================================
-// BOTÃO ATUALIZAR
-// ============================================================
-
-const refreshBtn =
-    document.getElementById(
-        "refreshBtn"
-    );
-
-if (refreshBtn) {
-
-    refreshBtn.addEventListener(
-        "click",
-        atualizarDashboard
-    );
-
 }
 
 
@@ -833,14 +644,10 @@ document.addEventListener(
 
         atualizarDashboard();
 
-
-        // Atualiza automaticamente
-        // a cada 10 segundos
-
+        // Atualiza a cada 10 segundos
         setInterval(
             atualizarDashboard,
             10000
         );
-
     }
 );
