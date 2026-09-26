@@ -1,3 +1,8 @@
+/* ============================================================
+   TÔ LIGADO! — MONITOR DE ENERGIA
+   CSS PRINCIPAL DO DASHBOARD
+   ============================================================ */
+
 * {
     box-sizing: border-box;
 }
@@ -642,4 +647,3 @@ footer p {
         font-size: 19px;
     }
 }
-
