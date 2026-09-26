@@ -73,6 +73,13 @@ async function carregarDadosAtuais() {
             alertasElement.textContent =
                 dados.alertasHoje;
         }
+        if (custoElement) {
+    const energia = Number(dados.energiaDia) || 0;
+    const custo = energia * 0.95;
+
+    custoElement.textContent =
+        `R$ ${custo.toFixed(2).replace(".", ",")}`;
+}
 
 
     } catch (erro) {
