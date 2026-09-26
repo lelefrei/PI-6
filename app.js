@@ -638,64 +638,6 @@ document.addEventListener(
         );
     }
 );
-// ============================================================
-// MODO NOTURNO
-// ============================================================
 
-const themeBtn =
-    document.getElementById("themeBtn");
-
-
-// Carrega o tema salvo
-const temaSalvo =
-    localStorage.getItem("tema");
-
-if (temaSalvo === "dark") {
-
-    document.body.classList.add("dark");
-
-    if (themeBtn) {
-        themeBtn.textContent = "☀️";
-    }
-
-}
-
-
-// Clique no botão
-if (themeBtn) {
-
-    themeBtn.addEventListener(
-        "click",
-        function() {
-
-            document.body.classList.toggle("dark");
-
-
-            const modoEscuro =
-                document.body.classList.contains("dark");
-
-
-            if (modoEscuro) {
-
-                themeBtn.textContent = "☀️";
-
-                localStorage.setItem(
-                    "tema",
-                    "dark"
-                );
-
-            } else {
-
-                themeBtn.textContent = "🌙";
-
-                localStorage.setItem(
-                    "tema",
-                    "light"
-                );
-
-            }
-
-        }
-    );
 
 }
