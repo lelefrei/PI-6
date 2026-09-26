@@ -693,23 +693,39 @@ function criarGraficoMensal(
 // FORMATAR DATA
 // ============================================================
 
-function formatarData(data) {
+function formatarHora(dataHora) {
 
-    if (!data) {
+    if (!dataHora) {
         return "";
     }
 
-    const partes =
-        data.split("-");
+    let valor = String(dataHora).trim();
 
-    if (partes.length !== 3) {
-        return data;
+    // Os dados do servidor estão em UTC
+    // Adiciona o identificador UTC quando o timestamp
+    // não possui informação de fuso horário.
+    if (
+        /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(valor) &&
+        !/[Zz]|[+-]\d{2}:\d{2}$/.test(valor)
+    ) {
+        valor = valor.replace(" ", "T") + "Z";
     }
 
-    return (
-        partes[2] +
-        "/" +
-        partes[1]
+    const data = new Date(valor);
+
+    if (isNaN(data.getTime())) {
+        return dataHora;
+    }
+
+    // Converte automaticamente para o horário de São Paulo
+    return data.toLocaleTimeString(
+        "pt-BR",
+        {
+            timeZone: "America/Sao_Paulo",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        }
     );
 }
 
