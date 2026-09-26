@@ -642,3 +642,131 @@ footer p {
         font-size: 19px;
     }
 }
+/* ============================================================
+   MODO NOTURNO
+   ============================================================ */
+
+body.dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+    --primary: #38bdf8;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    background: var(--bg);
+    color: var(--text);
+}
+
+
+/* Cabeçalho */
+
+body.dark .topbar {
+    background: #111827;
+    border-bottom-color: #334155;
+}
+
+
+/* Cards */
+
+body.dark .kpi-card,
+body.dark .control-card,
+body.dark .chart-card,
+body.dark .filter-card,
+body.dark .info-box {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: var(--shadow);
+}
+
+
+/* Textos */
+
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark strong {
+    color: #f8fafc;
+}
+
+
+body.dark p,
+body.dark span,
+body.dark small {
+    color: #94a3b8;
+}
+
+
+/* Campos */
+
+body.dark input,
+body.dark select {
+    background: #0f172a;
+    color: #f8fafc;
+    border-color: #475569;
+}
+
+
+/* Botão do tema */
+
+body.dark .icon-btn {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #475569;
+}
+
+
+/* Cards de gráfico */
+
+body.dark .chart-heading h3 {
+    color: #f8fafc;
+}
+
+
+/* Área dos filtros */
+
+body.dark .field label,
+body.dark .control-row label {
+    color: #e2e8f0;
+}
+
+
+/* Rodapé */
+
+body.dark footer {
+    background: #111827;
+    color: #94a3b8;
+    border-top-color: #334155;
+}
+
+
+/* Botão atualizar */
+
+body.dark .refresh-btn {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #475569;
+}
+
+
+/* Transição suave */
+
+body,
+.topbar,
+.kpi-card,
+.control-card,
+.chart-card,
+.filter-card,
+.info-box,
+footer,
+input,
+select,
+.icon-btn,
+.refresh-btn {
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
