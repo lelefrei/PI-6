@@ -1,5 +1,5 @@
 const tarifa=0.95;
-const API_BASE_URL="https://to-ligado-api.onrender.com";
+const API_BASE_URL = "https://pi6-3ggn.onrender.com";
 let consumoTempoReal=[],labelsTempoReal=[],listaAlertasDiarios=[],dadosMensaisOriginais={labels:[],valores:[]},filtroAtivo=false;
 const inputLimite=document.getElementById("limiteAlerta");
 inputLimite.value=localStorage.getItem("limiteAlertaUsuario")||14080;
