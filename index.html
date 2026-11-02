@@ -36,9 +36,10 @@
 </section>
 
 <section class="chart-grid">
-<article class="chart-card chart-wide"><div class="chart-heading"><div><h3>⚡ Consumo em tempo real</h3><p>Últimas leituras recebidas da API</p></div><span class="live-badge">● AO VIVO</span></div><div class="chart-wrap large"><canvas id="realtimeChart"></canvas></div></article>
+<article class="chart-card chart-wide"><div class="chart-heading"><div><h3>⚡ Consumo em tempo real</h3><p>Leituras simuladas atualizadas automaticamente</p></div><span class="live-badge">● AO VIVO</span></div><div class="chart-wrap large"><canvas id="realtimeChart"></canvas></div></article>
 <article class="chart-card"><div class="chart-heading"><div><h3>📊 Consumo diário</h3><p>Últimos 7 dias</p></div></div><div class="chart-wrap"><canvas id="dailyChart"></canvas></div></article>
-<article class="chart-card"><div class="chart-heading"><div><h3>📅 Consumo mensal</h3><p>Histórico dos últimos meses</p></div></div><div class="chart-wrap"><canvas id="monthlyChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>📅 Consumo mensal</h3><p>Dados demonstrativos dos últimos 12 meses</p></div></div><div class="chart-wrap"><canvas id="monthlyChart"></canvas></div></article>
+<article class="chart-card"><div class="chart-heading"><div><h3>🏠 Consumo por equipamento</h3><p>Distribuição estimada do consumo residencial</p></div></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></article>
 </section>
 
 <section class="filter-card">
@@ -52,11 +53,11 @@
 
 <section class="info-grid">
 <div class="info-box"><span class="info-icon">💡</span><div><strong>Tarifa utilizada</strong><p>R$ 0,95 por kWh</p></div></div>
-<div class="info-box"><span class="info-icon">☁️</span><div><strong>Arquitetura em nuvem</strong><p>API Flask + PostgreSQL/Supabase</p></div></div>
-<div class="info-box"><span class="info-icon">📡</span><div><strong>Comunicação</strong><p>MQTT para as leituras do sensor</p></div></div>
+<div class="info-box"><span class="info-icon">📊</span><div><strong>Fonte dos dados</strong><p>Dados fictícios gerados no próprio navegador</p></div></div>
+<div class="info-box"><span class="info-icon">🔄</span><div><strong>Atualização</strong><p>Simulação automática a cada 5 segundos</p></div></div>
 </section>
 </main>
-<footer><p><strong>Tô Ligado 2.0!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Dados atualizados automaticamente</p></footer>
+<footer><p><strong>Tô Ligado 2.0!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Demonstração com dados fictícios — sem conexão com banco de dados</p></footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
 </body>
