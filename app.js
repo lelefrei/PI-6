@@ -5,6 +5,8 @@ let TARIFA_KWH = 0.85;          // tarifa base (R$/kWh) — controlada pelo slid
 let ACRESCIMO_BANDEIRA = 0;     // acréscimo da bandeira (R$/kWh)
 
 // Equivalência social (valores de referência — ajuste se quiser)
+// Bandeira de cada mês do ano (dados fictícios, jan→dez)
+const BANDEIRA_POR_MES = ["Verde","Verde","Amarela","Amarela","Verde","Vermelha 1","Vermelha 2","Vermelha 2","Vermelha 1","Amarela","Verde","Amarela"];
 const POTENCIA_GELADEIRA_W = 350;
 const POTENCIA_LED_W = 12;
 
@@ -139,12 +141,15 @@ function atualizarEquivalencia() {
     (g && l ? `<span class="plus">+</span>` : "") +
     (l ? `<span class="icon-sm">${l}</span>` : "");
 
-  criarGrafico("equivChart","bar",
-    ["Geladeiras (W)","Lâmpadas LED (W)"],
-    [{label:"Potência equivalente (W)",
-      data:[geladeiras*POTENCIA_GELADEIRA_W, leds*POTENCIA_LED_W],
-      backgroundColor:["#1769e0","#e67e22"],borderRadius:7}],
-    {indexAxis:"y",plugins:{legend:{display:false}}}
+  const eq = historicoPotencia.map(x => +(x.potencia / POTENCIA_GELADEIRA_W).toFixed(2));
+  const media = eq.reduce((s,v)=>s+v,0) / eq.length;
+  $("equivMedia").textContent =
+    `Nas últimas leituras, a média foi de ${numero(media,1)} geladeiras equivalentes (pico de ${numero(Math.max(...eq),1)}).`;
+  criarGrafico("equivChart","line",
+    historicoPotencia.map(x=>x.hora.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})),
+    [{label:"Geladeiras equivalentes",data:eq,borderColor:"#1769e0",backgroundColor:"rgba(23,105,224,.13)",
+      fill:true,tension:.38,borderWidth:3,pointRadius:3},
+     {label:"Média",data:eq.map(()=>+media.toFixed(2)),borderColor:"#e67e22",borderDash:[6,6],borderWidth:2,pointRadius:0,fill:false}]
   );
 }
 
@@ -164,12 +169,19 @@ function atualizarCalculadora() {
   if ($("infoTarifa")) $("infoTarifa").textContent = `R$ ${numero(TARIFA_KWH,2)} por kWh`;
   if ($("custo")) $("custo").textContent = `R$ ${numero(total,2)}`;
 
-  criarGrafico("bandeiraChart","bar",
-    BANDEIRAS.map(b=>b.nome),
-    [{label:"Custo de hoje (R$)",
-      data:BANDEIRAS.map(b=>+(energia*(TARIFA_KWH+b.valor/100)).toFixed(2)),
-      backgroundColor:BANDEIRAS.map(b=>b.cor),borderRadius:7}],
-    {plugins:{legend:{display:false}}}
+  const meses = consumoMensal.map(m => m.mes.toLocaleDateString("pt-BR",{month:"short"}).replace(".",""));
+  const adic = (nome) => BANDEIRAS.find(x=>x.nome===nome).valor / 100;
+  const comBandeira = consumoMensal.map((m,i)=>+(m.consumo*(TARIFA_KWH+adic(BANDEIRA_POR_MES[i]))).toFixed(2));
+  const semBandeira = consumoMensal.map(m=>+(m.consumo*TARIFA_KWH).toFixed(2));
+  const totalCom = comBandeira.reduce((s,v)=>s+v,0);
+  const totalSem = semBandeira.reduce((s,v)=>s+v,0);
+  $("bandeiraResumo").textContent =
+    `Total em 12 meses: R$ ${numero(totalCom,2)} — R$ ${numero(totalCom-totalSem,2)} a mais por causa das bandeiras.`;
+  criarGrafico("bandeiraChart","bar", meses,
+    [{type:"bar",label:"Custo com a bandeira do mês (R$)",data:comBandeira,
+      backgroundColor:BANDEIRA_POR_MES.map(n=>BANDEIRAS.find(x=>x.nome===n).cor),borderRadius:7},
+     {type:"line",label:"Custo só com a tarifa (R$)",data:semBandeira,borderColor:"#172033",
+      borderWidth:2,borderDash:[5,5],pointRadius:2,tension:.3}]
   );
 }
 

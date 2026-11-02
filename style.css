@@ -659,7 +659,7 @@ footer p {
 }
 
 .chart-wrap.small {
-    height: 170px;
+    height: 230px;
     margin-top: 14px;
 }
 
@@ -767,4 +767,10 @@ footer p {
     .social-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.chart-caption {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 12px;
 }
