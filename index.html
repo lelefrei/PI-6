@@ -25,7 +25,7 @@
 <section class="kpi-grid">
 <article class="kpi-card blue"><div class="kpi-icon">⚡</div><div><span>Consumo atual</span><strong id="potencia">-- W</strong><small>Potência instantânea</small></div></article>
 <article class="kpi-card green"><div class="kpi-icon">🔋</div><div><span>Energia hoje</span><strong id="energiaDia">-- kWh</strong><small>Consumo acumulado</small></div></article>
-<article class="kpi-card orange"><div class="kpi-icon">💰</div><div><span>Custo estimado</span><strong id="custo">R$ --</strong><small>Tarifa: R$ 0,95/kWh</small></div></article>
+<article class="kpi-card orange"><div class="kpi-icon">💰</div><div><span>Custo estimado</span><strong id="custo">R$ --</strong><small id="kpiTarifa">Tarifa: R$ 0,85/kWh</small></div></article>
 <article class="kpi-card purple"><div class="kpi-icon">📈</div><div><span>Pico do dia</span><strong id="pico">-- W</strong><small>Maior potência registrada</small></div></article>
 </section>
 
@@ -42,6 +42,34 @@
 <article class="chart-card"><div class="chart-heading"><div><h3>🏠 Consumo por equipamento</h3><p>Distribuição estimada do consumo residencial</p></div></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></article>
 </section>
 
+<section class="social-grid">
+<article class="chart-card" id="cardEquivalencia">
+  <div class="chart-heading"><div><h3>🤝 Equivalência Social</h3><p>O que o consumo atual representa no dia a dia</p></div></div>
+  <div class="equiv-icons" id="equivIcons" aria-hidden="true"></div>
+  <p class="equiv-text">O consumo atual de <strong id="equivWatts">-- W</strong> equivale a:</p>
+  <p class="equiv-result" id="equivResultado">Aguardando dados...</p>
+  <div class="chart-wrap small"><canvas id="equivChart"></canvas></div>
+</article>
+<article class="chart-card" id="cardTarifa">
+  <div class="chart-heading"><div><h3>🧮 Calculadora de Tarifa e Bandeira</h3><p>Simule quanto custa a energia de hoje</p></div></div>
+  <div class="calc-row">
+    <div class="calc-label"><label for="tarifaRange">Tarifa da distribuidora</label><small id="tarifaLabel">R$ 0,85/kWh</small></div>
+    <span class="tarifa-badge" id="tarifaBadge">R$ 0,85/kWh</span>
+  </div>
+  <input type="range" id="tarifaRange" class="tarifa-range" min="0.50" max="1.50" step="0.01" value="0.85">
+  <div class="field calc-field"><label for="bandeiraSelect">Bandeira tarifária</label>
+    <select id="bandeiraSelect">
+      <option value="0">Verde (sem acréscimo)</option>
+      <option value="1.885">Amarela (+ R$ 1,885 / 100 kWh)</option>
+      <option value="4.463">Vermelha – Patamar 1 (+ R$ 4,463 / 100 kWh)</option>
+      <option value="7.877">Vermelha – Patamar 2 (+ R$ 7,877 / 100 kWh)</option>
+    </select>
+  </div>
+  <div class="calc-result"><span>Valor calculado (energia de hoje)</span><strong id="valorCalculado">R$ --</strong><small id="valorDetalhe">--</small></div>
+  <div class="chart-wrap small"><canvas id="bandeiraChart"></canvas></div>
+</article>
+</section>
+
 <section class="filter-card">
 <div class="section-title"><div><h3>🔎 Análise por período</h3><p>Filtre o histórico mensal por ano e mês.</p></div></div>
 <div class="filters">
@@ -52,12 +80,12 @@
 </section>
 
 <section class="info-grid">
-<div class="info-box"><span class="info-icon">💡</span><div><strong>Tarifa utilizada</strong><p>R$ 0,95 por kWh</p></div></div>
+<div class="info-box"><span class="info-icon">💡</span><div><strong>Tarifa utilizada</strong><p id="infoTarifa">R$ 0,85 por kWh</p></div></div>
 <div class="info-box"><span class="info-icon">📊</span><div><strong>Fonte dos dados</strong><p>Dados fictícios gerados no próprio navegador</p></div></div>
 <div class="info-box"><span class="info-icon">🔄</span><div><strong>Atualização</strong><p>Simulação automática a cada 5 segundos</p></div></div>
 </section>
 </main>
-<footer><p><strong>Tô Ligado 2.0!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Demonstração com dados  — conexão com banco de dados</p></footer>
+<footer><p><strong>Tô Ligado 2.0!</strong> — Projeto Integrador • Monitor de Energia Residencial</p><p>Demonstração com dados fictícios — sem conexão com banco de dados</p></footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
 </body>
